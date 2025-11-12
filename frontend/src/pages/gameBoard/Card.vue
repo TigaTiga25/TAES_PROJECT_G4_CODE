@@ -29,8 +29,8 @@ const imageSrc = computed(() => {
 
 <style scoped>
 .card {
-  width: 80px;
-  height: 120px;
+  width: 110px;
+  height: 165px;
 }
 .card-img {
   width: 100%;

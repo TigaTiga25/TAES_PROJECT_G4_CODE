@@ -1,50 +1,52 @@
 <template>
-  <div class="game-board">
-    <h1>Bisca</h1>
+  <div class="game-board flex flex-col items-center justify-between min-h-screen bg-green-700 p-4">
+    <h1 class="text-4xl font-bold text-white mb-14">Practice Game</h1>
 
     <!-- Linha 1: mão do bot -->
-    <div class="bot-hand">
+    <div class="bot-hand flex justify-center mb-8">
       <BotHand :cards="botCards" />
     </div>
 
     <!-- Linha 2: mesa -->
-    <div class="table-row">
-      <div class="deck-area">
-        <div class="deck-and-trump">
+    <div class="table-row flex items-center justify-between w-full max-w-5xl mb-8">
+      <div class="deck-area flex items-center">
+        <div class="deck-and-trump flex items-end gap-4">
           <!-- Baralho -->
-          <div class="deck-stack">
-            <Card :hidden="true" />
-            <span class="deck-label">{{ deck.length }} cards left</span>
+          <div class="deck-stack flex flex-col items-center">
+            <Card :hidden="true" class="w-28 h-40" />
+            <span class="deck-label text-white mt-1">{{ deck.length }} cards left</span>
           </div>
 
           <!-- Trunfo -->
-          <div class="trump-field">
-            <Card :card="trumpCard" />
-            <span class="deck-label">Trump</span>
+          <div class="trump-field flex flex-col items-center">
+            <Card :card="trumpCard" class="w-28 h-40" />
+            <span class="deck-label text-white mt-1">Trump</span>
           </div>
         </div>
       </div>
 
       <!-- Área de jogo -->
-      <div class="played-area">
+      <div class="played-area flex gap-6 justify-center min-w-[220px]">
         <div v-if="playedCards.bot" class="played bot">
-          <Card :card="playedCards.bot" />
+          <Card :card="playedCards.bot" class="w-28 h-40" />
         </div>
         <div v-if="playedCards.player" class="played player">
-          <Card :card="playedCards.player" />
+          <Card :card="playedCards.player" class="w-28 h-40" />
         </div>
       </div>
     </div>
 
     <!-- Linha 3: mão do jogador -->
-    <div class="player-hand">
-      <PlayerHand :cards="playerCards" @play-card="handlePlayerPlay" />
+    <div class="player-hand flex justify-center mb-8">
+      <PlayerHand :cards="playerCards" @play-card="handlePlayerPlay" class="w-28 h-40" />
     </div>
 
-    <div>
-        <button @click="restartGame" class="btn">Restart game</button>
-        <button @click="quitGame" class="btn">Quit game</button>
+    <!-- A REMOVER: BUTOES APARECERÃO NUM POP UP QUANDO O JOGO TERMINAR -->
+    <div class="flex gap-4">
+      <button @click="restartGame" class="btn bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg">Restart game</button>
+      <button @click="quitGame" class="btn bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg">Quit game</button>
     </div>
+    <!-- ATÉ AQUI -->
   </div>
 </template>
 
@@ -88,7 +90,6 @@ function handlePlayerPlay(card) {
     const hasSuit = playerCards.value.some(c => c.suit === botSuit)
     if (hasSuit && card.suit !== botSuit) {
       toast.error('Tens de assistir ao naipe jogado!')
-      
       return
     }
   }
@@ -278,7 +279,7 @@ startGame()
 .deck-label {
   margin-top: 0.4rem;
   font-size: 0.85rem;
-  color: #555;
+  color: #fff;
 }
 
 .played-area {
@@ -287,6 +288,8 @@ startGame()
   justify-content: flex-end;
   min-width: 180px;
 }
+
+/* A REMOVER: BUTOES APARECERÃO NUM POP UP QUANDO O JOGO TERMINAR */
 
 .btn {
   padding: 0.5rem 1rem;
