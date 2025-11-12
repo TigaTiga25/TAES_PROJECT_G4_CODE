@@ -57,8 +57,9 @@ import PlayerHand from './PlayerHand.vue'
 import Card from './Card.vue'
 import generateDeck from '@/lib/generateDeck.js'
 import { toast } from 'vue-sonner'
+import { useRouter } from 'vue-router'
 
-
+const router = useRouter()
 const fullDeck = generateDeck()
 
 const deck = ref([])
@@ -220,7 +221,7 @@ function restartGame() {
 }
 
 function quitGame() {
-  //TODO
+  router.push('/home')
 }
 
 startGame()
