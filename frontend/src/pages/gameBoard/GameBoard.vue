@@ -54,6 +54,8 @@ import BotHand from './BotHand.vue'
 import PlayerHand from './PlayerHand.vue'
 import Card from './Card.vue'
 import generateDeck from '@/lib/generateDeck.js'
+import { toast } from 'vue-sonner'
+
 
 const fullDeck = generateDeck()
 
@@ -85,7 +87,8 @@ function handlePlayerPlay(card) {
     const botSuit = playedCards.value.bot.suit
     const hasSuit = playerCards.value.some(c => c.suit === botSuit)
     if (hasSuit && card.suit !== botSuit) {
-      alert('Tens de assistir ao naipe jogado!')
+      toast.error('Tens de assistir ao naipe jogado!')
+      
       return
     }
   }
