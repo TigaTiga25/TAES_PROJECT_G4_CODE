@@ -13,7 +13,7 @@
             <CardContent class="space-y-4">
 
                 <div class="flex justify-center">
-                    <Button size="lg" class="w-full hover:bg-purple-500 hover:text-slate-200">
+                    <Button @click="playGame" size="lg" class="w-full hover:bg-purple-500 hover:text-slate-200">
                         Começar Nova Partida (vs. Bot)
                     </Button>
                 </div>
@@ -37,6 +37,8 @@
 </template>
 
 <script setup>
+
+import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import {
     Card,
@@ -45,4 +47,10 @@ import {
     CardHeader,
     CardTitle
 } from '@/components/ui/card'
+
+const router = useRouter()
+
+const playGame = () => {
+  router.push('/gameBoard') 
+}
 </script>

@@ -1,7 +1,11 @@
 <template>
+  <Toaster />
   <router-view />
 </template>
 
 <script setup>
-// Este ficheiro pode ficar assim simples por agora
+  
+  import { Toaster } from '@/components/ui/sonner'
+  import 'vue-sonner/style.css'
+
 </script>
