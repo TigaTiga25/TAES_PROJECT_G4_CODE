@@ -86,7 +86,7 @@ function startGame() {
 
 function handlePlayerPlay(card) {
   //Obrigar a assistir
-  if (iniciateTrick.value === 'b' && playedCards.value.bot) {
+  if (iniciateTrick.value === 'b' && playedCards.value.bot && !canDraw.value) {
     const botSuit = playedCards.value.bot.suit
     const hasSuit = playerCards.value.some(c => c.suit === botSuit)
     if (hasSuit && card.suit !== botSuit) {
