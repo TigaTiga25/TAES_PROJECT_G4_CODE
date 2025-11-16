@@ -5,6 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -17,4 +18,17 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     },
   },
+
+  // --- ESTA É A PARTE QUE TEM DE ADICIONAR ---
+  server: {
+    proxy: {
+      // Reencaminha todos os pedidos que começam por /api
+      // para o seu backend em localhost:8000
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      }
+    }
+  }
+  // --- FIM DO BLOCO ADICIONADO ---
 })

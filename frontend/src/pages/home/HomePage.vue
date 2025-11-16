@@ -18,7 +18,7 @@
                     </Button>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+               <div class="grid grid-cols-2 gap-4">
                     <Button variant="secondary">
                         Histórico de Partidas
                     </Button>
@@ -28,7 +28,17 @@
                     <Button variant="secondary" class="col-span-2">
                         Customizações (Decks e Avatares)
                     </Button>
+
+    
+                    <div class="col-span-2 flex justify-center">
+                        <button 
+                            @click="handleLogout" 
+                            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded">
+                            Sair (Logout)
+                        </button>
+                    </div>
                 </div>
+
 
                 </CardContent>
         </Card>
@@ -40,6 +50,7 @@
 
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
+import { userStore } from '@/stores/userStore.js';
 import {
     Card,
     CardContent,
@@ -49,6 +60,14 @@ import {
 } from '@/components/ui/card'
 
 const router = useRouter()
+
+const handleLogout = async () => {
+    
+    await userStore.logout();
+    
+    // Redireciona para a página de login
+    router.push('/'); 
+};
 
 const playGame = () => {
   router.push('/gameBoard') 
