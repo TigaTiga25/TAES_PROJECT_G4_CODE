@@ -18,28 +18,6 @@ class MatchController extends Controller
 
     }
 
-    public function matchesByUser($user_id)
-    {
-        return GameMatch::where('player1_user_id', $user_id)->get();
-    }
-
-    public function show($id)
-    {
-        $match = GameMatch::find($id);
-
-        if (!$match) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Match não encontrado'
-            ], 404);
-        }
-
-        return response()->json([
-            'status' => 200,
-            'data' => $match
-        ]);
-    }
-
     public function create(Request $request){
         $request->validate([
             'player1_user_id' => 'required|exists:users,id',
