@@ -1,24 +1,61 @@
 <template>
   <div class="game-board flex flex-col items-center justify-between min-h-screen bg-green-700 p-4 relative">
 
+
     <div v-if="isGameOver" class="fixed inset-0 bg-green-700 bg-opacity-90 flex items-center justify-center z-50">
-        <div class="bg-white p-8 rounded-lg shadow-2xl text-center max-w-sm animate-fade-in border-4 border-yellow-400">
-            <h2 class="text-3xl font-bold mb-4 text-gray-800">FIM DO JOGO</h2>
-            <p class="text-xl mb-6 text-gray-600">Vencedor: <br><span class="font-extrabold text-blue-600 text-2xl block mt-2">{{ matchWinner }}</span></p>
-            <div class="space-y-3 bg-gray-100 p-4 rounded-md">
-                <div class="flex justify-between text-gray-700"><span>Jogador:</span><span class="font-bold">{{ playerPoints }}</span></div>
-                <div class="flex justify-between text-gray-700"><span>Bot:</span><span class="font-bold">{{ botPoints }}</span></div>
+    <div class="bg-white p-8 rounded-lg shadow-2xl text-center w-full max-w-2xl animate-fade-in border-4 border-yellow-400">
+        <h2 class="text-3xl font-bold mb-4 text-gray-800">{{ popupTitle }}</h2>
+
+        <p class="text-xl mb-6 text-gray-600">Winner: <br><span class="font-extrabold text-blue-600 text-2xl block mt-2">{{ matchWinner }}</span></p>
+
+        <div v-if="!isMatchOver" class="flex justify-around bg-gray-100 p-4 rounded-md text-gray-700">
+            <div class="flex flex-col items-center">
+                <span class="font-semibold">Player</span>
+                <span class="font-bold text-lg">{{ playerPoints }}</span>
             </div>
-            <div class="flex flex-col mt-6 gap-3">
-                <button @click="restartGame" class="btn bg-green-600 hover:bg-green-700 text-white font-bold">Novo Jogo</button>
-                <button @click="quitGame" class="btn bg-gray-500 hover:bg-gray-600 text-white font-bold">Sair</button>
+            <div class="flex flex-col items-center">
+                <span class="font-semibold">Bot</span>
+                <span class="font-bold text-lg">{{ botPoints }}</span>
             </div>
         </div>
+
+        <div v-if="isMatchOver" class="justify-around p-4 rounded-md text-gray-700">
+          <p class="text-lg text-black-600">Total points: {{ matchTotalPoints }}</p>
+          <p class="text-lg text-black-600">Total time: {{ matchTotalTime }} seconds</p>
+          <p class="text-lg text-black-600">Number of games: {{ matchTotalGames }}</p>
+        </div>
+        
+        <div v-if="isMatchOver" class="w-full max-w-3xl mt-6 text-left">
+          <ul class="space-y-4">
+            <li
+              v-for="(game, index) in matchGames"
+              :key="game.id"
+              class="p-5 bg-white rounded-2xl shadow-sm flex justify-between items-center border border-green-200 hover:shadow-md hover:bg-green-50/40 transition"
+            >
+              <span class="font-medium text-green-900 text-lg tracking-tight">
+                GAME {{ index+1 }}
+              </span>
+
+              <span class="font-medium text-green-900 text-lg tracking-tight">
+                {{game.player1_points}} - {{game.player2_points}} ({{ game.player1_points > game.player2_points ? classify(game.player1_points) : classify(game.player2_points) }})
+              </span>
+
+            </li>
+          </ul>
+        </div>
+
+        <div class="flex justify-center mt-6 gap-4">
+            <button v-if="props.id <= 0" @click="restartGame" class="btn bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded">New Game</button>
+            <button v-if="props.id > 0 && !isMatchOver" @click="continueMatch" class="btn bg-green-600 hover:bg-green-700 text-white font-bold px-4 py-2 rounded">Continue</button>
+            <button @click="quitGame" class="btn bg-gray-500 hover:bg-gray-600 text-white font-bold px-4 py-2 rounded">Exit</button>
+        </div>
     </div>
+</div>
+
 
     <div class="w-full max-w-5xl flex justify-between items-center mb-4">
-        <h1 v-if="props.id !== 0" class="text-4xl font-bold text-white drop-shadow-md">Bisca Clássica</h1>
-        <h1 v-if="props.id === 0" class="text-4xl font-bold text-white drop-shadow-md">Practice Game</h1>
+        <h1 v-if="props.id > 0" class="text-4xl font-bold text-white drop-shadow-md">Bisca Clássica</h1>
+        <h1 v-if="props.id <= 0" class="text-4xl font-bold text-white drop-shadow-md">Practice Game</h1>
         <div class="text-right text-white p-3 bg-gray-900 bg-opacity-60 rounded-lg shadow-sm border border-white/10">
             <p class="text-xs uppercase tracking-wider opacity-80">Bot</p>
             <p class="text-3xl font-mono font-extrabold text-yellow-400">{{ botPoints }}</p>
@@ -86,6 +123,7 @@ import Card from './Card.vue'
 import generateDeck from '@/lib/generateDeck.js'
 import { toast } from 'vue-sonner'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 
 const router = useRouter()
 const props = defineProps({
@@ -94,7 +132,6 @@ const props = defineProps({
     required: true,
   }
 });
-console.log('Game ID:', props.id);
 const fullDeck = generateDeck()
 
 
@@ -114,12 +151,25 @@ const playerPoints = ref(0)
 const botPoints = ref(0)
 const isGameOver = ref(false)
 const matchWinner = ref('')
+const popupTitle = ref('')
+const isMatchOver = ref(false)
+const matchTotalTime = ref(0)
+const matchTotalGames = ref(0)
+const matchTotalPoints = ref(0)
+const matchGames = ref([])
+const matchId = ref(0);
 
 // --- REGRAS ---
 const cardRankOrder = ['2', '3', '4', '5', '6', '12', '11', '13', '7', '1']
 const cardPoints = { '1': 11, '7': 10, '13': 4, '11': 3, '12': 2, '6': 0, '5': 0, '4': 0, '3': 0, '2': 0 }
 const allSuits = ['e', 'o', 'p', 'c'];
 const suitOrder = ['e', 'o', 'p', 'c'];
+const classify = (points) => {
+            if (points >= 120) return 'Bandeira';
+            if (points >= 91) return 'Capote';
+            if (points >= 61) return 'Risca';
+            return 'Test mode';
+        };
 
 // --- HELPERS ---
 function getCardRank(card) { return card ? cardRankOrder.indexOf(card.value) : -1 }
@@ -249,6 +299,7 @@ function sortPlayerHand() {
 }
 
 function startGame() {
+  
   const newDeck = fullDeck;
   const shuffled = newDeck.sort(() => Math.random() - 0.5)
 
@@ -257,12 +308,25 @@ function startGame() {
   trumpCard.value = shuffled[39]
   deck.value = shuffled.slice(18, 39)
 
+  iniciateTrick.value = Math.random() < 0.5 ? 'p' : 'b'
+
+  if (props.id === -1) {
+    //CENÁRIO DE TESTE
+    const aceOfTrump = { suit: trumpCard.value.suit, value: "1" };
+    const botCard = shuffled[0];
+
+    playerCards.value = [aceOfTrump];
+    botCards.value = [botCard];
+    deck.value = [];
+
+    iniciateTrick.value = "p"; 
+  }
+
   playedCards.value = { player: null, bot: null }
   playedCardsHistory.value = []
   canDraw.value = true
 
   initTracker();
-  iniciateTrick.value = Math.random() < 0.5 ? 'p' : 'b'
 
   playerPoints.value = 0
   botPoints.value = 0
@@ -372,29 +436,55 @@ async function clearTable() {
 
     if (!gameContinues) {
 
-      /*try {
-        const response = await axios.put(`/api/games/${gameId}/finishGame`, {
-            player1_points: playerPoints.value
-        })
+      if(props.id > 0) {
+        //Not a practice game
+        try {
+          const response = await axios.put(`/api/games/${props.id}/finishGame`, {
+              player1_points: playerPoints.value
+          })
 
-      } catch (error) {
-        console.error('Erro ao finalizar jogo:', error)
-      }*/
+          if(response.data.status == 201){
+            //Game + Match over
+            isGameOver.value = true;
+            isMatchOver.value = true;
+            popupTitle.value = 'MATCH OVER'
+            matchWinner.value = response.data.match.player1_marks > response.data.match.player1_marks ? 'YOU WIN' : 'YOU LOSE';
+            matchTotalPoints.value = response.data.match.player1_points;
+            matchTotalTime.value = response.data.match.total_time;
+            matchTotalGames.value = response.data.games.length;
+            matchGames.value = response.data.games;
+          }else{
+            //Game over
+            isGameOver.value = true;
+            matchId.value = response.data.data.match_id;
+            console.log('Match ID:', matchId.value);
+            console.log('Response Data:', response.data.data);
+            popupTitle.value = 'GAME '+ response.data.gameNumber+' OVER'
+            if (playerPoints.value > botPoints.value) {
+                matchWinner.value = `PLAYER (${classify(playerPoints.value)})`;
+            } else if (botPoints.value > playerPoints.value) {
+                matchWinner.value = `BOT (${classify(botPoints.value)})`;
+            } else {
+                matchWinner.value = 'DRAW';
+            }
 
-      isGameOver.value = true;
-        const classify = (points) => {
-            if (points >= 120) return 'Bandeira';
-            if (points >= 91) return 'Capote';
-            if (points >= 61) return 'Risca';
-            return 'Derrota';
-        };
-        if (playerPoints.value > botPoints.value) {
-            matchWinner.value = `JOGADOR VENCEU (${classify(playerPoints.value)})`;
-        } else if (botPoints.value > playerPoints.value) {
-            matchWinner.value = `BOT VENCEU (${classify(botPoints.value)})`;
-        } else {
-            matchWinner.value = 'EMPATE';
+          }
+
+        } catch (error) {
+          console.error('Erro ao finalizar jogo:', error)
         }
+      }else{
+        //Practice game
+        isGameOver.value = true;
+        popupTitle.value = 'GAME OVER'
+        if (playerPoints.value > botPoints.value) {
+            matchWinner.value = `PLAYER (${classify(playerPoints.value)})`;
+        } else if (botPoints.value > playerPoints.value) {
+            matchWinner.value = `BOT (${classify(botPoints.value)})`;
+        } else {
+            matchWinner.value = 'DRAW';
+        }
+      }
     }
 
     if (iniciateTrick.value === 'b' && gameContinues) {
@@ -407,9 +497,17 @@ function restartGame() {
   startGame()
 }
 
+async function continueMatch() {
+  const response = await axios.post(`/api/matches/${matchId.value}/game`)
+  router.push(`/gameBoard/${response.data.data.id}`)
+  startGame()
+}
+
 function quitGame() {
   router.push('/home')
 }
+
+
 
 startGame()
 </script>
@@ -496,14 +594,10 @@ startGame()
 .btn {
   padding: 0.5rem 1rem;
   border: none;
-  background: #1976d2;
   color: white;
   border-radius: 6px;
   cursor: pointer;
   width: 100%;
   margin-top: 0;
-}
-.btn:hover {
-  background: #145ca1;
 }
 </style>
