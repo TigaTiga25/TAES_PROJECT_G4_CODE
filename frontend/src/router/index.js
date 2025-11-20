@@ -22,9 +22,10 @@ const routes = [
     component: RegisterPage
   },
   {
-    path: '/gameBoard',
+    path: '/gameBoard/:id',
     name: 'GameBoard',
-    component: GameBoard
+    component: GameBoard,
+    props: route => ({ id: parseInt(route.params.id) })
   }
 ]
 

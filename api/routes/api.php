@@ -9,6 +9,7 @@ use App\Http\Controllers\GameController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+Route::middleware('auth:sanctum')->get('/auth/me', [AuthController::class, 'me']);
 
 //TODO: Adicionar o middleware 
 Route::get('/matches', [MatchController::class, 'index']); //debug

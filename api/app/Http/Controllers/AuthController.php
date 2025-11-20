@@ -81,4 +81,13 @@ class AuthController extends Controller
             'message' => 'Logout efetuado com sucesso'
         ]);
     }
+
+    public function me()
+    {
+        $user = Auth::user();
+
+        return response()->json([
+            'user' => $user
+        ]);
+    }
 }

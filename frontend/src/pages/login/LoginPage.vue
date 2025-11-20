@@ -110,7 +110,7 @@ const handleLogin = async () => {
     const token = response.data.token;
 
     // 4. Chamar a store 
-    userStore.login(token); 
+    await userStore.login(token); 
     
     // 5. Redirecionar para a página principal
     router.push('/home');

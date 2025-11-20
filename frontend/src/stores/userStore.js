@@ -8,7 +8,7 @@ export const userStore = reactive({
   token: null, // Guardará a prova de login
 
   // A função de login agora espera um TOKEN
-  login(token) {
+  async login(token) {
     this.isLoggedIn = true
     this.isAnonymous = false
     this.token = token
@@ -16,14 +16,23 @@ export const userStore = reactive({
     
     // Diz ao axios para usar este token em todos os pedidos futuros
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
+    await this.fetchUser()
   },
 
   loginAsGuest() {
-   
+    this.isLoggedIn = true
+    this.isAnonymous = true
+    this.token = null
+    this.user = {
+      name: 'Guest',
+      coins_balance: 0,
+      photo_avatar_filename: null
+    }
+
+    localStorage.setItem('guest', '1')
   },
 
-// ...
-  
   async logout() {
     try {
         // Se tivermos um token, avisamos o backend para o destruir
@@ -46,12 +55,13 @@ export const userStore = reactive({
 
 
   // loadFromStorage agora procura o TOKEN
-  loadFromStorage() {
+  async loadFromStorage() {
     const savedToken = localStorage.getItem('token')
     const guestMode = localStorage.getItem('guest')
 
     if (savedToken) {
-      this.login(savedToken) // Re-login com o token guardado
+      await this.login(savedToken) // Re-login com o token guardado
+      await this.fetchUser()
     } else if (guestMode) {
       this.isAnonymous = true
     }
@@ -59,14 +69,15 @@ export const userStore = reactive({
 
   
   // Função para ir buscar os dados do utilizador (ex: nome)
-  // async fetchUser() {
-  //   if (!this.token) return;
-  //   try {
-  //     const response = await axios.get('/api/user');
-  //     this.user = response.data;
-  //   } catch (error) {
-  //     console.error("Não foi possível ir buscar o utilizador", error);
-  //     this.logout(); // Se o token for inválido, faz logout
-  //   }
-  // }
+  async fetchUser() {
+    if (!this.token) return;
+    try {
+      const response = await axios.get('/api/auth/me');
+      this.user = response.data.user;
+      console.log(response.data.user);
+    } catch (error) {
+      console.error("Não foi possível ir buscar o utilizador", error);
+      this.logout(); // Se o token for inválido, faz logout
+    }
+  }
 })

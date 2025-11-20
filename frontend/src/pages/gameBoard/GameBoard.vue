@@ -17,7 +17,8 @@
     </div>
 
     <div class="w-full max-w-5xl flex justify-between items-center mb-4">
-        <h1 class="text-4xl font-bold text-white drop-shadow-md">Bisca Clássica</h1>
+        <h1 v-if="props.id !== 0" class="text-4xl font-bold text-white drop-shadow-md">Bisca Clássica</h1>
+        <h1 v-if="props.id === 0" class="text-4xl font-bold text-white drop-shadow-md">Practice Game</h1>
         <div class="text-right text-white p-3 bg-gray-900 bg-opacity-60 rounded-lg shadow-sm border border-white/10">
             <p class="text-xs uppercase tracking-wider opacity-80">Bot</p>
             <p class="text-3xl font-mono font-extrabold text-yellow-400">{{ botPoints }}</p>
@@ -87,7 +88,17 @@ import { toast } from 'vue-sonner'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const props = defineProps({
+  id: {
+    type: Number,
+    required: true,
+  }
+});
+console.log('Game ID:', props.id);
 const fullDeck = generateDeck()
+
+
+
 
 // --- ESTADO ---
 const deck = ref([])
@@ -317,8 +328,8 @@ function trickWinner() {
   }
 }
 
-function clearTable() {
-  setTimeout(() => {
+async function clearTable() {
+  setTimeout(async () => {
     if (playedCards.value.player) {
         playedCardsHistory.value.push(playedCards.value.player);
         updateTracker(playedCards.value.player);
@@ -360,7 +371,17 @@ function clearTable() {
     playedCards.value = { player: null, bot: null }
 
     if (!gameContinues) {
-        isGameOver.value = true;
+
+      /*try {
+        const response = await axios.put(`/api/games/${gameId}/finishGame`, {
+            player1_points: playerPoints.value
+        })
+
+      } catch (error) {
+        console.error('Erro ao finalizar jogo:', error)
+      }*/
+
+      isGameOver.value = true;
         const classify = (points) => {
             if (points >= 120) return 'Bandeira';
             if (points >= 91) return 'Capote';
