@@ -1,66 +1,6 @@
 <template>
   <div class="min-h-screen bg-gradient-to-b from-emerald-10 to-emerald-100 flex flex-col font-sans select-none">
 
-    <!-- NAVBAR -->
-    <header class="w-full backdrop-blur-xl bg-white/40 border-b border-emerald-200 sticky top-0 z-30 shadow-sm">
-      <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-
-        <!-- LEFT: Avatar + User Info -->
-        <div v-if="user" class="flex items-center gap-4">
-
-          <div class="w-12 h-12 rounded-2xl overflow-hidden bg-emerald-600 text-white flex items-center justify-center shadow-md font-bold border border-emerald-300">
-            <img
-              v-if="user.photo_avatar_filename"
-              :src="`http://localhost:8000/storage/photos_avatars/${user.photo_avatar_filename}`"
-              alt="Avatar"
-              class="w-full h-full object-cover"
-            />
-            <span v-else class="text-xl">{{ user.name.charAt(0).toUpperCase() }}</span>
-          </div>
-
-          <!-- NAME + COINS -->
-          <div class="flex flex-col leading-tight">
-            <span class="font-semibold text-emerald-900 text-lg tracking-tight">{{ user.name }}</span>
-            <span class="text-sm text-emerald-700 opacity-80">Coins: {{ user.coins_balance }}</span>
-          </div>
-        </div>
-
-        <!-- RIGHT: Buttons -->
-        <div class="flex items-center gap-3">
-          <Button
-            v-if="isGuest"
-            @click="goToLogin"
-            variant="secondary"
-            class="bg-emerald-200 hover:bg-emerald-300 text-emerald-900 rounded-xl px-4 py-2 shadow-sm transition"
-          >Login</Button>
-          <Button
-            v-if="!isGuest"
-            @click=""
-            variant="secondary"
-            class="bg-green-300 hover:bg-green-400 text-green-900 rounded-xl px-4 py-2 shadow-sm transition"
-          >Game History</Button>
-          <Button
-            v-if="!isGuest"
-            @click=""
-            variant="secondary"
-            class="bg-green-300 hover:bg-green-400 text-green-900 rounded-xl px-4 py-2 shadow-sm transition"
-          >Purchase coins</Button>
-          <Button
-            v-if="!isGuest"
-            @click=""
-            variant="secondary"
-            class="bg-green-300 hover:bg-green-400 text-green-900 rounded-xl px-4 py-2 shadow-sm transition"
-          >Customizations</Button>
-          <button
-            v-if="!isGuest"
-            @click="handleLogout"
-            class="bg-red-300 hover:bg-red-400 text-red-900 px-4 py-2 rounded-xl font-medium transition shadow-sm"
-          >Logout</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- MAIN CONTENT -->
     <main class="flex-grow flex flex-col items-center justify-start px-4 py-16 text-center">
 
       <h1 class="text-6xl font-black text-emerald-900 mb-3 tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
@@ -68,7 +8,7 @@
       </h1>
       <p class="text-emerald-700 text-xl mb-14 opacity-90">Start a new match and test your skills!</p>
 
-      <!-- MAIN BUTTONS -->
+      <!-- BUTTONS -->
       <div class="flex flex-wrap gap-8 justify-center mb-14">
         <Button
           v-if="!isGuest"

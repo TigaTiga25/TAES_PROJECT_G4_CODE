@@ -27,9 +27,9 @@ const route = useRoute()
 
 // Define se a barra aparece
 const showNavbar = computed(() => {
-  const hiddenRoutes = ['/', '/login', '/register']
-  return !hiddenRoutes.includes(route.path)
-})
+  const hiddenRoutes = ['/', '/login', '/register', '/gameBoard/'];
+  return !hiddenRoutes.some(r => route.path === r || route.path.startsWith('/gameBoard/'));
+});
 
 // --- AVATAR ---
 const avatarUrl = computed(() => {
@@ -85,6 +85,13 @@ function handleLogout() {
       </NavigationMenu>
 
       <div class="flex items-center gap-4">
+        <NavigationMenu v-if="!userStore.isLoggedIn">
+          <NavigationMenuList>
+            <NavigationMenuItem>
+          <RouterLink to="/" class="nav-link">Login</RouterLink>
+        </NavigationMenuItem>
+          </NavigationMenuList>
+        </NavigationMenu>
         
         <Badge v-if="userStore.isLoggedIn" variant="secondary" class="px-3 py-1 text-sm">
           🪙 {{ userStore.user?.coins_balance || 0 }}
