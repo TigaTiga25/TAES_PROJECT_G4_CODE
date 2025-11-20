@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash; 
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Auth\Events\Registered;
 
 class AuthController extends Controller
 {
@@ -28,17 +29,17 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
-            'password' => Hash::make($validatedData['password']), 
+            'password' => Hash::make($validatedData['password']),
         ]);
 
-        // 3. Cria um token para o novo utilizador
-        $token = $user->createToken('auth-token')->plainTextToken;
+        // 3. Dispara o evento de Registo (para enviar email de verificação)
+        event(new Registered($user));
 
-        // 4. Responde ao frontend
+        // Return a message telling frontend to show "Check your email"
         return response()->json([
-            'token' => $token,
+            'message' => 'Registo efetuado com sucesso! Por favor verifique o seu email para ativar a conta.',
             'user' => $user
-        ], 201); // 201 = Created
+        ], 201);
     }
 
     /**
@@ -55,9 +56,14 @@ class AuthController extends Controller
         // 2. Tenta fazer a autenticação
         // Auth::attempt() VERIFICA SE O EMAIL EXISTE E SE A PASSWORD BATE CERTO.
         if (Auth::attempt($credentials)) {
-            
-            // 3A. SUCESSO: Email existe E password está correta
-            $user = $request->user(); // Vai buscar o utilizador que fez login
+            // Vai buscar o utilizador que fez login
+            $user = $request->user();
+
+            //Check if email is verified before allowing login
+            if (!$user->hasVerifiedEmail()) {
+                return response()->json(['message' => 'Email não verificado.'], 403);
+            }
+            //SUCESSO: Gera um token de autenticação
             $token = $user->createToken('auth-token')->plainTextToken; // Cria um novo token
 
             // Responde ao frontend com o token

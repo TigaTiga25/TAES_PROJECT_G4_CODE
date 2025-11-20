@@ -74,7 +74,6 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { userStore } from '@/stores/userStore.js'
 import axios from 'axios' // 1. IMPORTAR O AXIOS
 
 import { Button } from '@/components/ui/button'
@@ -91,7 +90,7 @@ import {
 const router = useRouter()
 
 const email = ref('')
-const nickname = ref('') 
+const nickname = ref('')
 const password = ref('')
 
 // 2. ADICIONAR ESTADO PARA ERROS
@@ -112,15 +111,11 @@ const handleRegister = async () => {
       password: password.value
     });
 
-    // 5. SUCESSO! Utilizador guardado na base de dados!
-    // O backend envia um token, tal como no login
-    const token = response.data.token;
-
-    // 6. Fazer login automático com o token
-    userStore.login(token);
+     // "Registo efetuado... verifique o email"
+    alert(response.data.message);
 
     // 7. Redirecionar
-    router.push('/home');
+    router.push('/');
 
   } catch (error) {
     // 8. FALHA! (Ex: Email já existe, password curta, etc.)
@@ -141,6 +136,6 @@ const handleRegister = async () => {
 }
 
 const goBack = () => {
-  router.push('/') 
+  router.push('/')
 }
 </script>
