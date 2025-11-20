@@ -5,11 +5,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\MatchController; 
 use App\Http\Controllers\GameController; 
+use App\Http\Controllers\UserController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 Route::middleware('auth:sanctum')->get('/auth/me', [AuthController::class, 'me']);
+Route::put('/users/{user}', [UserController::class, 'update']);
 
 //TODO: Adicionar o middleware 
 Route::get('/matches', [MatchController::class, 'index']); //debug
