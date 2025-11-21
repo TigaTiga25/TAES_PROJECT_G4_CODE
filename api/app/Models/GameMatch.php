@@ -21,6 +21,7 @@ class GameMatch extends Model
         'player1_marks',
         'player2_marks',
         'player1_points',
+        'player2_points',
         'custom'
     ];
 

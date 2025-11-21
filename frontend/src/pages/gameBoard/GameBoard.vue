@@ -448,7 +448,7 @@ async function clearTable() {
             isGameOver.value = true;
             isMatchOver.value = true;
             popupTitle.value = 'MATCH OVER'
-            matchWinner.value = response.data.match.player1_marks > response.data.match.player1_marks ? 'YOU WIN' : 'YOU LOSE';
+            matchWinner.value = response.data.match.player1_marks > response.data.match.player2_marks ? 'YOU WIN' : 'YOU LOSE';
             matchTotalPoints.value = response.data.match.player1_points;
             matchTotalTime.value = response.data.match.total_time;
             matchTotalGames.value = response.data.games.length;

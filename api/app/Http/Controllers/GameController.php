@@ -75,12 +75,12 @@ class GameController extends Controller
         //Verificar se a partida terminou
         $games = Game::where('match_id', $match->id)->where('status', 'Ended')->get();
 
-        
         if ($match->player1_marks >= 4 || $match->player2_marks >= 4) {
             $match->status = 'Ended';
             $match->ended_at = now();
             $match->total_time = $games->sum('total_time');
             $match->player1_points = $games->sum('player1_points');
+            $match->player2_points = $games->sum('player2_points');
 
             $match->save();
 
