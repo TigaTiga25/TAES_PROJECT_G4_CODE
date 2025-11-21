@@ -24,7 +24,7 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
-            'password' => Hash::make($validatedData['password']),
+            'password' => $validatedData['password'],
         ]);
 
         // 3. Dispara o evento de Registo (para enviar email de verificação)
@@ -39,7 +39,7 @@ class AuthController extends Controller
 
 
     // ---------------------------
-    // LOGIN (CORRIGIDO)
+    // LOGIN
     // ---------------------------
     public function login(Request $request)
     {
@@ -49,12 +49,15 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials)) {
-
-            // 3A. SUCESSO: Email existe E password está correta
             $user = $request->user(); // Vai buscar o utilizador que fez login
-            $token = $user->createToken('auth-token')->plainTextToken; // Cria um novo token
 
-            // 🔥 AQUI ESTÁ A CORREÇÃO — DEVOLVE TAMBÉM O USER
+            // VERIFICAÇÃO DE SEGURANÇA: Impede login se não validou email
+            if (!$user->hasVerifiedEmail()) {
+                return response()->json(['message' => 'Email não verificado.'], 403);
+            }
+
+            $token = $user->createToken('auth-token')->plainTextToken;
+
             return response()->json([
                 'token' => $token,
                 'user' => $user
@@ -77,5 +80,10 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Logout efetuado com sucesso'
         ]);
+    }
+
+    public function me(Request $request)
+    {
+        return response()->json($request->user());
     }
 }
