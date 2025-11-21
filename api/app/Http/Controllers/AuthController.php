@@ -10,22 +10,17 @@ use Illuminate\Auth\Events\Registered;
 
 class AuthController extends Controller
 {
-    /**
-     * Regista um novo utilizador.
-     */
+    // ---------------------------
+    // REGISTAR
+    // ---------------------------
     public function register(Request $request)
     {
-        // 1. Valida os dados (nome, email único, password)
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users', // 'unique:users' impede registar email repetido
+            'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
         ]);
 
-        // 2. Cria o utilizador
-        // O User model (com 'password' => 'hashed') vai
-        // encriptar a password automaticamente.
-      // Dentro da função register() no AuthController.php
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
@@ -42,45 +37,41 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * Gere um pedido de autenticação (Login).
-     */
+
+    // ---------------------------
+    // LOGIN (CORRIGIDO)
+    // ---------------------------
     public function login(Request $request)
     {
-        // 1. Valida os dados recebidos (só precisa de email e password)
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
 
-        // 2. Tenta fazer a autenticação
-        // Auth::attempt() VERIFICA SE O EMAIL EXISTE E SE A PASSWORD BATE CERTO.
         if (Auth::attempt($credentials)) {
-            // Vai buscar o utilizador que fez login
-            $user = $request->user();
 
-            //Check if email is verified before allowing login
-            if (!$user->hasVerifiedEmail()) {
-                return response()->json(['message' => 'Email não verificado.'], 403);
-            }
-            //SUCESSO: Gera um token de autenticação
+            // 3A. SUCESSO: Email existe E password está correta
+            $user = $request->user(); // Vai buscar o utilizador que fez login
             $token = $user->createToken('auth-token')->plainTextToken; // Cria um novo token
 
-            // Responde ao frontend com o token
-            return response()->json(['token' => $token]);
-
+            // 🔥 AQUI ESTÁ A CORREÇÃO — DEVOLVE TAMBÉM O USER
+            return response()->json([
+                'token' => $token,
+                'user' => $user
+            ]);
         }
 
-        // 3B. FALHA: Email não existe OU password está errada
-        // Se Auth::attempt() falhar, o código continua para aqui
         return response()->json([
             'message' => 'Email ou password inválida.'
-        ], 401); // 401 = Erro de Não Autorizado
+        ], 401);
     }
+
+
+    // ---------------------------
+    // LOGOUT
+    // ---------------------------
     public function logout(Request $request)
     {
-        // O Laravel sabe quem é o utilizador através do token enviado
-        //Apaga apenas o token que foi usado neste pedido
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([

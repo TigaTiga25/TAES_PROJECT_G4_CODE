@@ -8,10 +8,13 @@ use App\Http\Controllers\GameController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use App\Http\Controllers\UserController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
+Route::middleware('auth:sanctum')->get('/auth/me', [AuthController::class, 'me']);
+Route::put('/users/{user}', [UserController::class, 'update']);
 
 Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
     // Procura o utilizador pelo ID (se não existir, dá erro 404)
