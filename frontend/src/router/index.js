@@ -4,6 +4,7 @@ import LoginPage from '@/pages/login/LoginPage.vue'
 import HomePage from '@/pages/home/HomePage.vue'
 import GameBoard from '@/pages/gameBoard/GameBoard.vue'
 import RegisterPage from '@/pages/register/RegisterPage.vue'
+import GameHistory from '@/pages/gameHistory/GameHistory.vue'
 import AboutPage from '@/pages/about/AboutPage.vue' // ← cria esta página (já explico abaixo)
 
 const routes = [
@@ -32,6 +33,11 @@ const routes = [
     name: 'GameBoard',
     component: GameBoard,
     props: route => ({ id: parseInt(route.params.id) })
+  },
+  {
+    path: '/history',
+    name: 'GameHistory',
+    component: GameHistory
   },
   {
     path: '/about',

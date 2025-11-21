@@ -52,6 +52,24 @@ class MatchController extends Controller
         ]);
     }
 
+    public function finishedMatchesByUser($user_id){
+        $matches = GameMatch::where('matches.player1_user_id', $user_id)
+                    ->where('matches.status', 'Ended')
+                    ->leftJoin('users as u1', 'u1.id', '=', 'matches.player1_user_id')
+                    ->leftJoin('users as u2', 'u2.id', '=', 'matches.player2_user_id')
+                    ->select(
+                        'matches.*',
+                        'u1.name as player1_name',
+                        'u2.name as player2_name'
+                    )
+                    ->get();
+
+        return response()->json([
+            'status' => 200,
+            'data' => $matches
+        ]);
+    }
+
     public function interruptGame($match_id){
         $match = GameMatch::find($match_id);
 
