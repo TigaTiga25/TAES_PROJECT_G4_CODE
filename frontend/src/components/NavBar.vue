@@ -71,11 +71,11 @@ function handleLogout() {
       <NavigationMenu class="hidden md:flex">
         <NavigationMenuList>
           <NavigationMenuItem>
-            <RouterLink to="/customizations" class="nav-link">Customizações</RouterLink>
+            <RouterLink to="/customizations" class="nav-link">Customizations</RouterLink>
           </NavigationMenuItem>
 
           <NavigationMenuItem>
-            <RouterLink to="/history" class="nav-link">Histórico</RouterLink>
+            <RouterLink to="/history" class="nav-link">Game History</RouterLink>
           </NavigationMenuItem>
           
           <NavigationMenuItem>
@@ -118,7 +118,7 @@ function handleLogout() {
 
           <DropdownMenuContent class="w-48 mr-4">
             <DropdownMenuItem @click="goTo('/profile')" class="cursor-pointer">
-              👤 Perfil
+              👤 Profile
             </DropdownMenuItem>
             
             <DropdownMenuSeparator />

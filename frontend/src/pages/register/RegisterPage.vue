@@ -4,10 +4,10 @@
     <Card class="w-full max-w-md shadow-lg border border-slate-200">
       <CardHeader class="text-center space-y-2">
         <CardTitle class="text-3xl font-bold text-slate-900">
-          Criar Conta
+          Create a new account
         </CardTitle>
         <CardDescription class="text-slate-600">
-          Junta-te à Bisca TAES e desbloqueia todas as funcionalidades!
+          Join Bisca TAES and unlock all features!
         </CardDescription>
       </CardHeader>
 
@@ -55,7 +55,7 @@
 
           <!-- Submit -->
           <Button type="submit" class="w-full py-3 text-base">
-            Criar Conta
+            Sign Up
           </Button>
 
         </form>
@@ -63,7 +63,7 @@
 
       <CardFooter class="flex flex-col gap-3 mt-2">
         <Button variant="secondary" @click="goBack" class="w-full">
-          Voltar ao Login
+          Return to Login
         </Button>
       </CardFooter>
     </Card>

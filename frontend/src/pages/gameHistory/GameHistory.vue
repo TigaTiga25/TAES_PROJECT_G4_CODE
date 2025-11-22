@@ -26,7 +26,7 @@
 
                   <div class="flex flex-col items-center leading-tight">
                     <span class="text-xl font-bold whitespace-nowrap">
-                      {{ match.player1_points }} - {{ match.player2_points }}
+                      {{ match.player1_points == null ? 0 : match.player1_points }} - {{ match.player2_points == null ? 0 : match.player2_points }}
                     </span>
 
                     <span class="text-base opacity-80 whitespace-nowrap">
@@ -42,7 +42,7 @@
                     <span class="text-sm opacity-70">vs</span>
 
                     <span class="truncate font-medium">
-                      {{ match.player2_name }}
+                      {{ match.player2_name == match.player1_name ? 'CPU' : match.player2_name }}
                     </span>
                   </div>
 

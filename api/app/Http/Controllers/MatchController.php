@@ -44,7 +44,7 @@ class MatchController extends Controller
     }
 
     public function unfinishedMatchesByUser($user_id){
-        $matches = GameMatch::where('player1_user_id', $user_id)->where('status', 'Playing')->get();
+        $matches = GameMatch::where('player1_user_id', $user_id)->where('status', 'Playing')->orderBy('began_at', 'desc')->get();
 
         return response()->json([
             'status' => 200,

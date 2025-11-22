@@ -7,7 +7,7 @@
           Bisca TAES
         </CardTitle>
         <CardDescription class="text-slate-600">
-          Inicia sessão ou entra como anónimo.
+          Log in or enter as a guest.
         </CardDescription>
       </CardHeader>
 
@@ -45,11 +45,11 @@
           </p>
 
           <Button type="submit" class="w-full">
-            Entrar
+            Log In
           </Button>
 
           <Button type="button" class="w-full" @click="goToRegister">
-            Registar
+            Sign Up
           </Button>
 
         </form>
@@ -57,7 +57,7 @@
 
       <CardFooter class="flex flex-col">
         <Button variant="secondary" @click="skipLogin" class="w-full">
-          Saltar Login (Modo Anónimo)
+          Continue as Guest
         </Button>
       </CardFooter>
     </Card>

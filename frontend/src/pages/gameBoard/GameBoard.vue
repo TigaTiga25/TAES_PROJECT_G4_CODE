@@ -54,10 +54,10 @@
 
 
     <div class="w-full max-w-5xl flex justify-between items-center mb-4">
-        <h1 v-if="props.id > 0" class="text-4xl font-bold text-white drop-shadow-md">Bisca Clássica</h1>
+        <h1 v-if="props.id > 0" class="text-4xl font-bold text-white drop-shadow-md">Classic Bisca</h1>
         <h1 v-if="props.id <= 0" class="text-4xl font-bold text-white drop-shadow-md">Practice Game</h1>
         <div class="text-right text-white p-3 bg-gray-900 bg-opacity-60 rounded-lg shadow-sm border border-white/10">
-            <p class="text-xs uppercase tracking-wider opacity-80">Bot</p>
+            <p class="text-xs uppercase tracking-wider opacity-80">CPU</p>
             <p class="text-3xl font-mono font-extrabold text-yellow-400">{{ botPoints }}</p>
         </div>
     </div>
@@ -80,35 +80,35 @@
              </div>
 
              <div v-else class="w-28 h-40 border-2 border-dashed border-white/30 rounded-lg flex items-center justify-center">
-                <span class="text-white/30 text-xs">Vazio</span>
+                <span class="text-white/30 text-xs">Empty</span>
              </div>
 
-             <span class="deck-label text-white mt-2 font-medium text-sm bg-black/30 px-2 py-0.5 rounded-full">{{ deck.length }} cartas</span>
+             <span class="deck-label text-white mt-2 font-medium text-sm bg-black/30 px-2 py-0.5 rounded-full">{{ deck.length }} cards</span>
           </div>
 
           <div class="trump-field flex flex-col items-center">
             <div v-if="trumpCard" class="relative">
                  <Card :card="trumpCard" class="w-28 h-40 shadow-lg" :class="{'opacity-50': deck.length === 0}" />
-                 <span class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-white mt-2 font-bold text-sm uppercase tracking-widest">Trunfo</span>
+                 <span class="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-white mt-2 font-bold text-sm uppercase tracking-widest">Trump</span>
             </div>
           </div>
         </div>
       </div>
 
       <div class="played-area flex gap-8 justify-center min-w-[260px] items-center">
-        <Transition name="card-play"><div v-if="playedCards.bot" class="played bot transform rotate-[-2deg]"><Card :card="playedCards.bot" class="w-28 h-40 shadow-2xl" /><span class="block text-center text-white/80 text-xs mt-2">Bot</span></div></Transition>
-        <Transition name="card-play"><div v-if="playedCards.player" class="played player transform rotate-[2deg]"><Card :card="playedCards.player" class="w-28 h-40 shadow-2xl" /><span class="block text-center text-white/80 text-xs mt-2">Tu</span></div></Transition>
+        <Transition name="card-play"><div v-if="playedCards.bot" class="played bot transform rotate-[-2deg]"><Card :card="playedCards.bot" class="w-28 h-40 shadow-2xl" /><span class="block text-center text-white/80 text-xs mt-2">CPU</span></div></Transition>
+        <Transition name="card-play"><div v-if="playedCards.player" class="played player transform rotate-[2deg]"><Card :card="playedCards.player" class="w-28 h-40 shadow-2xl" /><span class="block text-center text-white/80 text-xs mt-2">You</span></div></Transition>
       </div>
     </div>
 
     <div class="player-hand flex justify-center mb-8 relative">
-       <div v-if="iniciateTrick === 'p' && !playedCards.player" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black px-4 py-1 rounded-full font-bold text-sm shadow-lg animate-bounce">A tua vez!</div>
+       <div v-if="iniciateTrick === 'p' && !playedCards.player" class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-yellow-400 text-black px-4 py-1 rounded-full font-bold text-sm shadow-lg animate-bounce">Your turn!</div>
       <PlayerHand :cards="playerCards" @play-card="handlePlayerPlay" class="w-28 h-40" />
     </div>
 
     <div class="w-full max-w-5xl flex justify-between items-center mt-4">
         <div class="text-left text-white p-3 bg-gray-900 bg-opacity-60 rounded-lg shadow-sm border border-white/10">
-            <p class="text-xs uppercase tracking-wider opacity-80">Jogador</p>
+            <p class="text-xs uppercase tracking-wider opacity-80">Player</p>
             <p class="text-2xl font-mono font-extrabold text-green-400">{{ playerPoints }}</p>
         </div>
     </div>
@@ -168,6 +168,7 @@ const classify = (points) => {
             if (points >= 120) return 'Bandeira';
             if (points >= 91) return 'Capote';
             if (points >= 61) return 'Risca';
+            if (points == 60) return 'Empate';
             return 'Test mode';
         };
 
@@ -344,7 +345,7 @@ function handlePlayerPlay(card) {
     const botSuit = playedCards.value.bot.suit
     const hasSuit = playerCards.value.some(c => c.suit === botSuit)
     if (hasSuit && card.suit !== botSuit) {
-      toast.error('Tens de assistir ao naipe jogado!')
+      toast.error('You must follow the played suit!')
       return
     }
   }
@@ -463,7 +464,7 @@ async function clearTable() {
             if (playerPoints.value > botPoints.value) {
                 matchWinner.value = `PLAYER (${classify(playerPoints.value)})`;
             } else if (botPoints.value > playerPoints.value) {
-                matchWinner.value = `BOT (${classify(botPoints.value)})`;
+                matchWinner.value = `CPU (${classify(botPoints.value)})`;
             } else {
                 matchWinner.value = 'DRAW';
             }
@@ -480,7 +481,7 @@ async function clearTable() {
         if (playerPoints.value > botPoints.value) {
             matchWinner.value = `PLAYER (${classify(playerPoints.value)})`;
         } else if (botPoints.value > playerPoints.value) {
-            matchWinner.value = `BOT (${classify(botPoints.value)})`;
+            matchWinner.value = `CPU (${classify(botPoints.value)})`;
         } else {
             matchWinner.value = 'DRAW';
         }
