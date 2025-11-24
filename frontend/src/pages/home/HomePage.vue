@@ -64,6 +64,7 @@ import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { userStore } from '@/stores/userStore.js'
 import axios from 'axios'
+import { toast } from 'vue-sonner'
 
 const router = useRouter()
 const store = userStore
@@ -112,6 +113,11 @@ const newMatch = async () => {
       player1_user_id: user.value.id,
       type: 9
     })
+
+    if(matchResponse.data.status == 400){
+      toast.error('ERROR: Insufficient balance')
+      return
+    }
     const matchId = matchResponse.data.data.id
     const gameResponse = await axios.post(`/api/matches/${matchId}/game`)
     const gameId = gameResponse.data.data.id

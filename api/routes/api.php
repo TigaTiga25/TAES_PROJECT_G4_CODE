@@ -45,7 +45,7 @@ Route::post('/matches/{match_id}/game', [GameController::class, 'create']);
 Route::put('/games/{game_id}/finishGame', [GameController::class, 'finishGame']);
 Route::get('/matches/{user_id}/unfinished', [MatchController::class, 'unfinishedMatchesByUser']);
 Route::get('/matches/{user_id}/finished', [MatchController::class, 'finishedMatchesByUser']);
-Route::put('/matches/{match_id}/interrupt', [MatchController::class, 'interruptGame']); //ignorar
+Route::put('/matches/{match_id}/interrupt', [MatchController::class, 'interruptGame']); 
 
 
 Route::get('/metadata', function (Request $request) {
