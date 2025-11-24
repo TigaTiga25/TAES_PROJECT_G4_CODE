@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\GameMatch;
+use App\Models\User;
 
 class MatchController extends Controller
 {
@@ -19,11 +20,24 @@ class MatchController extends Controller
     }
 
     public function create(Request $request){
+        
         $request->validate([
             'player1_user_id' => 'required|exists:users,id',
             'type' => 'nullable|in:3,9',
             'stake' => 'nullable|integer|min:1'
         ]);
+
+        $user = User::find($request->player1_user_id);
+
+        if($user->coins_balance < 3){ //entry fee
+            return response()->json([
+                'status' => 400,
+                'message' => 'insufficient balance'
+            ]);
+        }
+
+        $user->coins_balance -= 3;
+        $user->save();
 
         $match = GameMatch::create([
             'player1_user_id' => $request->player1_user_id,
@@ -35,6 +49,7 @@ class MatchController extends Controller
             'player2_marks' => 0,
             'began_at' => now(),
         ]);
+
 
         return response()->json([
             'status' => 201,
