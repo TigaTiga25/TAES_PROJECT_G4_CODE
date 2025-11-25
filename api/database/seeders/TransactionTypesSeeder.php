@@ -18,11 +18,14 @@ class TransactionTypesSeeder extends Seeder
         // Add default coin_transaction_types
         DB::table('coin_transaction_types')->insert([
             ['id' => 1, 'name' => 'Bonus', 'type' => 'C'],         // id = 1
-            ['id' => 2, 'name' => 'Coin purchase', 'type' => 'C'], // id = 2
-            ['id' => 3, 'name' => 'Game fee', 'type' => 'D'],      // id = 3
+            ['id' => 1, 'name' => 'Bónus Inicial', 'description' => 'Oferta de registo'],
+            ['id' => 2, 'name' => 'Vitória', 'description' => 'Ganhou o jogo'],
+            ['id' => 3, 'name' => 'Compra', 'description' => 'Moedas compradas na loja'],
             ['id' => 4, 'name' => 'Match stake', 'type' => 'D'],   // id = 4
             ['id' => 5, 'name' => 'Game payout', 'type' => 'C'],      // id = 5
             ['id' => 6, 'name' => 'Match payout', 'type' => 'C'],     // id = 6
+            ['id' => 1, 'name' => 'Bónus Inicial', 'description' => 'Oferta de registo'],
+       
         ]);
 
         $this->command->line("Coin Transaction Types Created Successfully.");

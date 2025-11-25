@@ -5,47 +5,86 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
-   public function update(Request $request, User $user)
-{
-    // 1. Validação
-    $request->validate([
-        'name' => 'required|string|max:255',
-        // 'file' deve ser uma imagem, max 2MB (2048kb)
-        'file' => 'nullable|image|max:2048', 
-    ]);
+    // --------------------------------------------------------------------
+    // OBTER TRANSAÇÕES (Corrigido para 'coins' e 'transaction_datetime')
+    // --------------------------------------------------------------------
+    public function getTransactions(Request $request)
+    {
+        try {
+            $user = $request->user();
 
-    $data = $request->only(['name']);
+            $transactions = DB::table('coin_transactions')
+                ->join('coin_transaction_types', 'coin_transactions.coin_transaction_type_id', '=', 'coin_transaction_types.id')
+                ->where('coin_transactions.user_id', $user->id)
+                ->select(
+                    'coin_transactions.id',
+                    'coin_transactions.coins as amount', 
+                    'coin_transactions.transaction_datetime as date', 
+                    'coin_transaction_types.name as type_name'
+                )
+                ->orderBy('coin_transactions.transaction_datetime', 'desc')
+                ->get();
 
-    // 2. Upload da Imagem
-    if ($request->hasFile('file')) {
-        
-     
-        if ($user->photo_avatar_filename && Storage::disk('public')->exists('photos_avatars/' . $user->photo_avatar_filename)) {
-             Storage::disk('public')->delete('photos_avatars/' . $user->photo_avatar_filename);
+            return response()->json(['data' => $transactions]);
+
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erro SQL: ' . $e->getMessage()], 500);
         }
-
-        // Guardar a nova imagem na pasta 'storage/app/public/photos_avatars'
-        $path = $request->file('file')->store('photos_avatars', 'public');
-        
-     
-        $data['photo_avatar_filename'] = basename($path);
     }
 
- 
-    if ($request->filled('password')) {
-        $data['password'] = Hash::make($request->password);
+    // --------------------------------------------------------------------
+    // COMPRAR MOEDAS
+    // --------------------------------------------------------------------
+    public function buyCoins(Request $request)
+    {
+        try {
+            $request->validate([
+                'cost' => 'required|integer|min:1',
+                'payment_type' => 'required|string'
+            ]);
+
+            $euros = $request->cost;
+            $coinsToAdd = $euros * 10; // 1€ = 10 Moedas
+
+            $user = $request->user();
+
+            DB::transaction(function () use ($user, $coinsToAdd) {
+                
+                // 1. Atualizar Saldo do User
+                DB::table('users')
+                    ->where('id', $user->id)
+                    ->increment('coins_balance', $coinsToAdd);
+
+                // 2. Registar Transação
+                DB::table('coin_transactions')->insert([
+                    'user_id' => $user->id,
+                    'coin_transaction_type_id' => 2,
+                    'coins' => $coinsToAdd, 
+                    'transaction_datetime' => now(), 
+                  
+                ]);
+            });
+
+            $newBalance = DB::table('users')->where('id', $user->id)->value('coins_balance');
+
+            return response()->json([
+                'message' => "Compra realizada!",
+                'new_balance' => $newBalance
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Erro na compra: ' . $e->getMessage()], 500);
+        }
     }
 
-    $user->update($data);
-
-    return response()->json([
-        'data' => $user, 
-        'message' => 'Perfil atualizado!'
-    ]);
-}
+    public function update(Request $request, User $user)
+    {
+        $request->validate(['name' => 'required|string|max:255']);
+        $user->update($request->only('name'));
+        return response()->json(['message' => 'Perfil atualizado!']);
+    }
 }

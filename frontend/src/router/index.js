@@ -5,7 +5,8 @@ import HomePage from '@/pages/home/HomePage.vue'
 import GameBoard from '@/pages/gameBoard/GameBoard.vue'
 import RegisterPage from '@/pages/register/RegisterPage.vue'
 import GameHistory from '@/pages/gameHistory/GameHistory.vue'
-import AboutPage from '@/pages/about/AboutPage.vue' // ← cria esta página (já explico abaixo)
+import AboutPage from '@/pages/about/AboutPage.vue' 
+import Transactions from '@/pages/transactions/Transactions.vue' 
 
 const routes = [
   {
@@ -13,6 +14,11 @@ const routes = [
     name: 'Login',
     component: LoginPage
   },
+  {
+      path: '/transactions',
+      name: 'transactions',
+      component: Transactions
+    },
   {
   path: '/profile',
   name: 'profile',

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\GameMatch;
 use App\Models\User;
+use App\Models\CoinTransaction;
+use Illuminate\Support\Facades\DB;
 
 class MatchController extends Controller
 {
@@ -16,15 +18,17 @@ class MatchController extends Controller
             'status' => 200,
             'data' => $matches
         ]);
-
     }
 
+    // ------------------------------------------------------------------------
+    // CRIAR PARTIDA (Cobra a Aposta)
+    // ------------------------------------------------------------------------
     public function create(Request $request){
         
         $request->validate([
             'player1_user_id' => 'required|exists:users,id',
             'type' => 'nullable|in:3,9',
-            'stake' => 'nullable|integer|min:1'
+            'stake' => 'nullable|integer|min:3' 
         ]);
 
         $user = User::find($request->player1_user_id);
@@ -53,9 +57,52 @@ class MatchController extends Controller
 
         return response()->json([
             'status' => 201,
-            'message' => 'Partida criada com sucesso',
-            'data' => $match
+            'message' => 'Partida criada e aposta paga com sucesso',
+            'data' => $match,
+            'new_balance' => $user->coins_balance
         ]);
+    }
+
+    // ------------------------------------------------------------------------
+    // TERMINAR PARTIDA (Paga o Prémio)
+    // ------------------------------------------------------------------------
+    public function finishGame(Request $request, $match_id)
+    {
+        // O frontend deve dizer quem ganhou (ID do user)
+        $request->validate(['winner_id' => 'required|exists:users,id']);
+
+        $match = GameMatch::find($match_id);
+
+        if(!$match || $match->status !== 'Playing') {
+            return response()->json(['message' => 'Jogo não encontrado ou já terminado'], 400);
+        }
+
+        DB::transaction(function () use ($match, $request) {
+            // 1. Atualizar o estado da partida
+            $match->status = 'Ended';
+            $match->winner_user_id = $request->winner_id;
+            $match->ended_at = now();
+            $match->save();
+
+            // 2. Calcular o Prémio conforme regras do enunciado 
+            // "Winner receives combined stake... minus 1 coin commission"
+            $totalPot = $match->stake * 2; // Aposta do Jogador + Aposta do Bot
+            $prize = $totalPot - 1; // Comissão da plataforma
+
+            // 3. Pagar ao Vencedor
+            $winner = User::find($request->winner_id);
+            $winner->coins_balance += $prize;
+            $winner->save();
+
+            // 4. Registar o prémio no histórico (ID 6 = Match Payout)
+            CoinTransaction::create([
+                'user_id' => $winner->id,
+                'coin_transaction_type_id' => 6, // ID 6: Prémio de Vitória
+                'coin_amount' => $prize,
+            ]);
+        });
+
+        return response()->json(['status' => 200, 'message' => 'Partida terminada e prémio entregue.']);
     }
 
     public function unfinishedMatchesByUser($user_id){

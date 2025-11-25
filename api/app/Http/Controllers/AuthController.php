@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Registered;
+use App\Models\CoinTransaction; // Já tens o import, boa!
 
 class AuthController extends Controller
 {
@@ -21,22 +22,30 @@ class AuthController extends Controller
             'password' => 'required|string|min:8',
         ]);
 
+        // 1. Criar o Utilizador com 10 moedas (Bónus de Boas-vindas)
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
-            'password' => $validatedData['password'],
+            'password' => Hash::make($validatedData['password']),
+            'coins_balance' => 10, // Começa com 10 moedas
+        ]);
+
+        // 2. REGISTAR A TRANSAÇÃO NO HISTÓRICO (O que faltava)
+        // Usamos o ID 1 porque definimos antes que 1 = Bonus
+        CoinTransaction::create([
+            'user_id' => $user->id,
+            'coin_transaction_type_id' => 1, 
+            'coin_amount' => 10,
         ]);
 
         // 3. Dispara o evento de Registo (para enviar email de verificação)
         event(new Registered($user));
 
-        // Return a message telling frontend to show "Check your email"
         return response()->json([
             'message' => 'Registo efetuado com sucesso! Por favor verifique o seu email para ativar a conta.',
             'user' => $user
         ], 201);
     }
-
 
     // ---------------------------
     // LOGIN
@@ -49,7 +58,7 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials)) {
-            $user = $request->user(); // Vai buscar o utilizador que fez login
+            $user = $request->user();
 
             // VERIFICAÇÃO DE SEGURANÇA: Impede login se não validou email
             if (!$user->hasVerifiedEmail()) {

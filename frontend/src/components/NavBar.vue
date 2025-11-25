@@ -93,7 +93,12 @@ function handleLogout() {
           </NavigationMenuList>
         </NavigationMenu>
         
-        <Badge v-if="userStore.isLoggedIn" variant="secondary" class="px-3 py-1 text-sm">
+       <Badge 
+          v-if="userStore.isLoggedIn" 
+          variant="secondary" 
+          class="px-3 py-1 text-sm cursor-pointer hover:bg-slate-200 transition select-none"
+          @click="goTo('/transactions')" 
+        >
           🪙 {{ userStore.user?.coins_balance || 0 }}
         </Badge>
 

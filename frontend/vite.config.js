@@ -21,14 +21,16 @@ export default defineConfig({
 
   // --- ESTA É A PARTE QUE TEM DE ADICIONAR ---
   server: {
-    proxy: {
-      // Reencaminha todos os pedidos que começam por /api
-      // para o seu backend em localhost:8000
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8000', // Porta onde corre o php artisan serve
+          changeOrigin: true,
+          headers: {
+            Accept: 'application/json',
+            "X-Requested-With": "XMLHttpRequest"
+          }
+        }
       }
     }
-  }
   // --- FIM DO BLOCO ADICIONADO ---
 })

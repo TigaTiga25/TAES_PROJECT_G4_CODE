@@ -10,6 +10,11 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use App\Http\Controllers\UserController;
 
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/users/transactions', [UserController::class, 'getTransactions']);
+    Route::put('/matches/{match_id}/finish', [MatchController::class, 'finishGame']);
+});
+Route::middleware('auth:sanctum')->post('/users/buy-coins', [UserController::class, 'buyCoins']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
