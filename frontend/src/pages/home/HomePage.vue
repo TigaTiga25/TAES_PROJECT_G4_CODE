@@ -99,6 +99,8 @@ const giveUpMatch = async (matchId) => {
 onMounted(async () => {
   if (!isGuest.value) {
     try {
+      const respUser = await axios.get('/api/auth/me')
+      store.updateUser(respUser.data)
       const response = await axios.get(`/api/matches/${user.value.id}/unfinished`)
       unfinishedMatches.value = response.data.data || []
     } catch (err) {

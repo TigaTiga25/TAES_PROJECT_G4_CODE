@@ -23,6 +23,7 @@
           <p class="text-lg text-black-600">Total points: {{ matchTotalPoints }}</p>
           <p class="text-lg text-black-600">Total time: {{ matchTotalTime }} seconds</p>
           <p class="text-lg text-black-600">Number of games: {{ matchTotalGames }}</p>
+          <p class="text-lg text-black-600">Coins earned: {{ coinsEarned }}</p>
         </div>
         
         <div v-if="isMatchOver" class="w-full max-w-3xl mt-6 text-left">
@@ -158,6 +159,7 @@ const matchTotalGames = ref(0)
 const matchTotalPoints = ref(0)
 const matchGames = ref([])
 const matchId = ref(0);
+const coinsEarned = ref(0);
 
 // --- REGRAS ---
 const cardRankOrder = ['2', '3', '4', '5', '6', '12', '11', '13', '7', '1']
@@ -454,6 +456,7 @@ async function clearTable() {
             matchTotalTime.value = response.data.match.total_time;
             matchTotalGames.value = response.data.games.length;
             matchGames.value = response.data.games;
+            coinsEarned.value = response.data.coinsEarned;
           }else{
             //Game over
             isGameOver.value = true;

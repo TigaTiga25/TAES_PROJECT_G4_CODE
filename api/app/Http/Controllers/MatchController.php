@@ -40,7 +40,7 @@ class MatchController extends Controller
             ]);
         }
 
-        $user->coins_balance -= 3;
+        $user->coins_balance -= 5;
         $user->save();
 
         $match = GameMatch::create([

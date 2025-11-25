@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\GameMatch;
 use App\Models\Game;
 use Carbon\Carbon;
+use App\Models\User;
+
 
 class GameController extends Controller
 {
@@ -84,11 +86,33 @@ class GameController extends Controller
 
             $match->save();
 
+            //calcular coins ganhas -> vitoria = 5 coins; por cada capote acresce 3 coins; se for bandeira ganha 20 coins
+            if($match->player1_marks >= 4){
+                //Ganhou o jogador
+                $coinsEarned = 5;
+                foreach($games as $game){
+                    if($game->player1_points == 120){
+                        $coinsEarned = 20;
+                        break;
+                    }
+
+                    if($game->player1_points > 90 && $game->player1_points < 120){
+                        $coinsEarned += 3;
+                        break;
+                    }
+                }
+
+                $user = User::find($match->player1_user_id);
+                $user->coins_balance += $coinsEarned;
+                $user->save();
+            } 
+
             return response()->json([
                 'status' => 201,
                 'message' => 'Jogo e partida finalizados com sucesso',
                 'match' => $match,
-                'games' => $games
+                'games' => $games,
+                'coinsEarned' => $coinsEarned?$coinsEarned:0
             ]);
         }
 
