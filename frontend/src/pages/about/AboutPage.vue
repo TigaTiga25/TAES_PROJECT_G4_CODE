@@ -4,20 +4,20 @@
 
       <div class="text-center space-y-2">
         <h1 class="text-4xl font-bold text-slate-900 tracking-tight">
-          Projeto de Bisca (TAES)
+          Bisca Project (TAES)
         </h1>
         <p class="text-lg text-slate-600">
-          Página "Sobre" e Teste de Ligação ao CSS
+          "About" Page and CSS Connection Test
         </p>
       </div>
 
       <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
         <p class="text-slate-700 leading-relaxed">
-          Esta página serve como a "Página Sobre" do projeto de Bisca single-player
-          e também como prova de que o
+          This page serves as the "About Page" for the single-player Bisca project
+          and also as proof that the
           <span class="font-semibold text-emerald-600">Frontend (VueJS)</span>
-          está a comunicar com o
-          <span class="font-semibold text-red-600">Backend (o nosso "CSS" em Laravel)</span>.
+          is communicating with the
+          <span class="font-semibold text-red-600">Backend (our "CSS" in Laravel)</span>.
         </p>
       </div>
 
@@ -27,7 +27,7 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            REST API (O nosso "CSS")
+            REST API (Our "CSS")
           </h3>
         </div>
         <div class="p-6 space-y-4">
@@ -51,12 +51,12 @@
 </template>
 
 <script setup>
-
 import { ref, onMounted } from 'vue'
 
 const api = ref({})
 
 onMounted(async () => {
+  // Ensure this URL matches your Laravel route configuration
   const response = await fetch('http://localhost:8000/api/metadata', {
     method: 'GET',
     headers: {
