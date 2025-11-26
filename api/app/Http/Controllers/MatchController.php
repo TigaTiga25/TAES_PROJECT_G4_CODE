@@ -24,11 +24,11 @@ class MatchController extends Controller
     // CRIAR PARTIDA (Cobra a Aposta)
     // ------------------------------------------------------------------------
     public function create(Request $request){
-        
+
         $request->validate([
             'player1_user_id' => 'required|exists:users,id',
             'type' => 'nullable|in:3,9',
-            'stake' => 'nullable|integer|min:3' 
+            'stake' => 'nullable|integer|min:3'
         ]);
 
         $user = User::find($request->player1_user_id);
@@ -84,7 +84,7 @@ class MatchController extends Controller
             $match->ended_at = now();
             $match->save();
 
-            // 2. Calcular o Prémio conforme regras do enunciado 
+            // 2. Calcular o Prémio conforme regras do enunciado
             // "Winner receives combined stake... minus 1 coin commission"
             $totalPot = $match->stake * 2; // Aposta do Jogador + Aposta do Bot
             $prize = $totalPot - 1; // Comissão da plataforma
@@ -124,6 +124,7 @@ class MatchController extends Controller
                         'u1.name as player1_name',
                         'u2.name as player2_name'
                     )
+                    ->orderBy('began_at', 'desc')
                     ->get();
 
         return response()->json([

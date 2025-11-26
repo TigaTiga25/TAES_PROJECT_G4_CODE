@@ -48,9 +48,10 @@ Route::get('/matches', [MatchController::class, 'index']); //debug
 Route::post('/matches', [MatchController::class, 'create']);
 Route::post('/matches/{match_id}/game', [GameController::class, 'create']);
 Route::put('/games/{game_id}/finishGame', [GameController::class, 'finishGame']);
+Route::get('/games/{user_id}/finished', [GameController::class, 'finishedGamesByUser']);
 Route::get('/matches/{user_id}/unfinished', [MatchController::class, 'unfinishedMatchesByUser']);
 Route::get('/matches/{user_id}/finished', [MatchController::class, 'finishedMatchesByUser']);
-Route::put('/matches/{match_id}/interrupt', [MatchController::class, 'interruptGame']); 
+Route::put('/matches/{match_id}/interrupt', [MatchController::class, 'interruptGame']);
 
 
 Route::get('/metadata', function (Request $request) {

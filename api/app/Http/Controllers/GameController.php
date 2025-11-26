@@ -48,7 +48,7 @@ class GameController extends Controller
         $game->save();
 
         switch($request->player1_points){
-            case 120: 
+            case 120:
                 $match->player1_marks += 4;
                 break;
             case 0:
@@ -92,7 +92,7 @@ class GameController extends Controller
             ]);
         }
 
-        
+
         $match->save();
 
         return response()->json([
@@ -100,6 +100,15 @@ class GameController extends Controller
             'message' => 'Jogo finalizado com sucesso',
             'data' => $game,
             'gameNumber' => $games->count()
+        ]);
+    }
+
+    public function finishedGamesByUser($user_id){
+        $matches = Game::where('player1_user_id', $user_id)->where('status', 'Ended')->orderBy('began_at', 'desc')->get();
+
+        return response()->json([
+            'status' => 200,
+            'data' => $matches
         ]);
     }
 }

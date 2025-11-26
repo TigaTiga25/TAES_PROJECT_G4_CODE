@@ -48,6 +48,29 @@
 
                 </div>
               </CardTitle>
+              <Card v-for="(game, gameNumber) in gamesByMatch(match.id)" class="w-full max-w-5xl">
+                <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full">
+                  <div class="text-left">
+                    <span class="text-lg">{{ game.began_at }}</span>
+                  </div>
+
+                  <div class="flex flex-col items-center leading-tight">
+                    <span class="text-xl font-bold whitespace-nowrap">
+                      {{ game.player1_points == null ? 0 : game.player1_points }} - {{ game.player2_points == null ? 0 : game.player2_points }}
+                    </span>
+                  </div>
+
+                  <div class="flex flex-col text-right leading-tight">
+                    <span class="truncate font-medium">
+                      {{ game.player1_name }}
+                    </span>
+
+                    <span class="truncate font-medium">
+                      #{{ gamesByMatch(match.id).length - gameNumber }}
+                    </span>
+                  </div>
+                </div>
+              </Card>
             </CardHeader>
         </Card>
     </div>
@@ -69,9 +92,11 @@ import {
 } from '@/components/ui/card'
 
 const matches = ref([])
+const games = ref([])
 
 onMounted(() => {
   getMatches()
+  getGames()
 })
 
 const getMatches = async () => {
@@ -83,10 +108,29 @@ const getMatches = async () => {
   try {
     const user = userStore.user
     const response  = await axios.get(`/api/matches/${user.id}/finished`);
-    matches.value = response.data.data.reverse();
+    matches.value = response.data.data;
   } catch (error) {
     matches.value = [];
   }
+}
+
+const getGames = async () => {
+  if (!userStore.isLoggedIn) {
+    return;
+  }
+
+
+  try {
+    const user = userStore.user
+    const response  = await axios.get(`/api/games/${user.id}/finished`);
+    games.value = response.data.data;
+  } catch (error) {
+    games.value = [];
+  }
+}
+
+const gamesByMatch = (matchId) => {
+  return games.value.filter(game => game.match_id === matchId);
 }
 
 const formatDate = (date) => {
