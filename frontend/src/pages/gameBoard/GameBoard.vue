@@ -111,7 +111,7 @@
     <div class="w-full max-w-5xl flex justify-between items-center mt-4">
         <div class="text-left text-white p-3 bg-gray-900 bg-opacity-60 rounded-lg shadow-sm border border-white/10">
             <p class="text-xs uppercase tracking-wider opacity-80">Player</p>
-            <p class="text-2xl font-mono font-extrabold text-green-400">{{ playerPoints }}</p>
+            <button @click="testBandeira"><p class="text-2xl font-mono font-extrabold text-green-400">{{ playerPoints }}</p></button>
         </div>
     </div>
   </div>
@@ -513,7 +513,28 @@ function quitGame() {
   router.push('/home')
 }
 
+async function testBandeira() {
+    try {
+      const response = await axios.put(`/api/games/${props.id}/finishGame`, {
+        player1_points: 120
+      })
 
+          
+      isGameOver.value = true;
+      isMatchOver.value = true;
+      popupTitle.value = 'MATCH OVER'
+      matchWinner.value = response.data.match.player1_marks > response.data.match.player2_marks ? 'YOU WIN' : 'YOU LOSE';
+      matchTotalPoints.value = response.data.match.player1_points;
+      matchTotalTime.value = response.data.match.total_time;
+      matchTotalGames.value = response.data.games.length;
+      matchGames.value = response.data.games;
+      coinsEarned.value = response.data.coinsEarned;
+          
+
+    } catch (error) {
+      console.error('Erro ao finalizar jogo:', error)
+    }
+}
 
 startGame()
 </script>
