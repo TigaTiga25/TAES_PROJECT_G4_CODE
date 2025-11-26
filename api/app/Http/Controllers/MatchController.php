@@ -33,7 +33,7 @@ class MatchController extends Controller
 
         $user = User::find($request->player1_user_id);
 
-        if($user->coins_balance < 3){ //entry fee
+        if($user->coins_balance < 5){ //entry fee
             return response()->json([
                 'status' => 400,
                 'message' => 'insufficient balance'
