@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Auth\Events\Registered;
-use App\Models\CoinTransaction; // Já tens o import, boa!
+use App\Models\CoinTransaction;
 
 class AuthController extends Controller
 {
@@ -34,7 +34,7 @@ class AuthController extends Controller
         // Usamos o ID 1 porque definimos antes que 1 = Bonus
         CoinTransaction::create([
             'user_id' => $user->id,
-            'coin_transaction_type_id' => 1, 
+            'coin_transaction_type_id' => 1,
             'coin_amount' => 10,
         ]);
 

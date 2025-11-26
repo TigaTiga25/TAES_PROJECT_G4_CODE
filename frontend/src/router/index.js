@@ -5,8 +5,9 @@ import HomePage from '@/pages/home/HomePage.vue'
 import GameBoard from '@/pages/gameBoard/GameBoard.vue'
 import RegisterPage from '@/pages/register/RegisterPage.vue'
 import GameHistory from '@/pages/gameHistory/GameHistory.vue'
-import AboutPage from '@/pages/about/AboutPage.vue' 
-import Transactions from '@/pages/transactions/Transactions.vue' 
+import AboutPage from '@/pages/about/AboutPage.vue'
+import Transactions from '@/pages/transactions/Transactions.vue'
+import ScoreboardsPage from '@/pages/scoreboard/ScoreboardPage.vue'
 
 const routes = [
   {
@@ -49,6 +50,11 @@ const routes = [
     path: '/about',
     name: 'About',
     component: AboutPage
+  },
+  {
+    path: '/scoreboards',
+    name: 'Scoreboards',
+    component: ScoreboardsPage
   }
 ]
 

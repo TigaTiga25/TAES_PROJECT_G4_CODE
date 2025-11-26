@@ -12,7 +12,8 @@ class GameMatch extends Model
     protected $fillable = [
         'type',
         'player1_user_id',
-        'player2_user_id', //obrigatorio
+        'player2_user_id',
+        'winner_user_id',
         'status',
         'stake',
         'began_at',
@@ -26,18 +27,28 @@ class GameMatch extends Model
     ];
 
     protected $casts = [
-        'custom' => 'array'
+        'custom' => 'array',
+        'began_at' => 'datetime',
+        'ended_at' => 'datetime',
     ];
 
     public function games()
     {
-        return $this->hasMany(Game::class);
+        return $this->hasMany(Game::class, 'match_id');
     }
 
-    public function player()
+    public function player1()
     {
         return $this->belongsTo(User::class, 'player1_user_id');
     }
 
-    
+    public function player2()
+    {
+        return $this->belongsTo(User::class, 'player2_user_id');
+    }
+
+    public function winner()
+    {
+        return $this->belongsTo(User::class, 'winner_user_id');
+    }
 }

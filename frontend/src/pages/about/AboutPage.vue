@@ -17,7 +17,7 @@
           and also as proof that the
           <span class="font-semibold text-emerald-600">Frontend (VueJS)</span>
           is communicating with the
-          <span class="font-semibold text-red-600">Backend (our "CSS" in Laravel)</span>.
+          <span class="font-semibold text-red-600">Backend</span>.
         </p>
       </div>
 
@@ -27,7 +27,7 @@
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            REST API (Our "CSS")
+            REST API
           </h3>
         </div>
         <div class="p-6 space-y-4">
