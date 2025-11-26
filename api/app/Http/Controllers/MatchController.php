@@ -40,8 +40,6 @@ class MatchController extends Controller
             ]);
         }
 
-        $user->coins_balance -= 5;
-        $user->save();
 
         $match = GameMatch::create([
             'player1_user_id' => $request->player1_user_id,
@@ -52,6 +50,17 @@ class MatchController extends Controller
             'player1_marks' => 0,
             'player2_marks' => 0,
             'began_at' => now(),
+        ]);
+
+        $user->coins_balance -= 5;
+        $user->save();
+
+        CoinTransaction::create([
+            'transaction_datetime' => now(),
+            'match_id' => $match->id,
+            'user_id' => $user->id,
+            'coin_transaction_type_id' => 3,
+            'coins' => -5,
         ]);
 
 

@@ -3,10 +3,11 @@
 
 
     <div v-if="isGameOver" class="fixed inset-0 bg-green-700 bg-opacity-90 flex items-center justify-center z-50">
-    <div class="bg-white p-8 rounded-lg shadow-2xl text-center w-full max-w-2xl animate-fade-in border-4 border-yellow-400">
+      <div class="bg-white p-8 rounded-lg shadow-2xl text-center w-full max-w-2xl animate-fade-in border-4 border-yellow-400 max-h-[90vh] overflow-y-auto">
         <h2 class="text-3xl font-bold mb-4 text-gray-800">{{ popupTitle }}</h2>
 
         <p class="text-xl mb-6 text-gray-600">Winner: <br><span class="font-extrabold text-blue-600 text-2xl block mt-2">{{ matchWinner }}</span></p>
+        <p v-if="!isMatchOver && props.id > 0" class="text-xl mb-6 text-gray-600">Current score: <br><span class="font-extrabold text-blue-600 text-2xl block mt-2">{{ gameResult }}</span></p>
 
         <div v-if="!isMatchOver" class="flex justify-around bg-gray-100 p-4 rounded-md text-gray-700">
             <div class="flex flex-col items-center">
@@ -160,6 +161,7 @@ const matchTotalPoints = ref(0)
 const matchGames = ref([])
 const matchId = ref(0);
 const coinsEarned = ref(0);
+const gameResult = ref('');
 
 // --- REGRAS ---
 const cardRankOrder = ['2', '3', '4', '5', '6', '12', '11', '13', '7', '1']
@@ -461,8 +463,6 @@ async function clearTable() {
             //Game over
             isGameOver.value = true;
             matchId.value = response.data.data.match_id;
-            console.log('Match ID:', matchId.value);
-            console.log('Response Data:', response.data.data);
             popupTitle.value = 'GAME '+ response.data.gameNumber+' OVER'
             if (playerPoints.value > botPoints.value) {
                 matchWinner.value = `PLAYER (${classify(playerPoints.value)})`;
@@ -471,6 +471,8 @@ async function clearTable() {
             } else {
                 matchWinner.value = 'DRAW';
             }
+
+            gameResult.value = response.data.match.player1_marks + '   -   ' + response.data.match.player2_marks;
 
           }
 
