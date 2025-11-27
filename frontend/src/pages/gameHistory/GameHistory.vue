@@ -13,23 +13,23 @@
           No matches found.
         </div>
 
-        <Card v-for="match in matches" class="w-full max-w-5xl" :class="{
-                'bg-blue-300': match.player1_marks > match.player2_marks,
-                'bg-red-300': match.player1_marks <= match.player2_marks}">
+        <Card v-for="match in matches" class="w-full max-w-4xl rounded-lg" :class="{
+                'bg-blue-400': match.player1_marks > match.player2_marks,
+                'bg-red-400': match.player1_marks <= match.player2_marks}">
             <CardHeader>
-              <CardTitle class="text-2xl font-bold">
-                <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full">
+              <CardTitle class="text-lg font-semibold text-gray-900">
+                <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-6">
 
                   <div class="text-left">
-                    <span class="text-lg">{{ formatDate(match.began_at) }}</span>
+                    <span class="text-sm text-gray-600">{{ formatDate(match.began_at) }}</span>
                   </div>
 
                   <div class="flex flex-col items-center leading-tight">
-                    <span class="text-xl font-bold whitespace-nowrap">
+                    <span class="text-3xl font-extrabold text-gray-800">
                       {{ match.player1_points == null ? 0 : match.player1_points }} - {{ match.player2_points == null ? 0 : match.player2_points }}
                     </span>
 
-                    <span class="text-base opacity-80 whitespace-nowrap">
+                    <span class="text-sm opacity-80 text-gray-600">
                       ({{ match.player1_marks }} - {{ match.player2_marks }})
                     </span>
                   </div>
@@ -39,7 +39,7 @@
                       {{ match.player1_name }}
                     </span>
 
-                    <span class="text-sm opacity-70">vs</span>
+                    <span class="text-sm opacity-70 text-gray-700">vs</span>
 
                     <span class="truncate font-medium">
                       {{ match.player2_name == match.player1_name ? 'CPU' : match.player2_name }}
@@ -48,14 +48,19 @@
 
                 </div>
               </CardTitle>
-              <Card v-for="(game, gameNumber) in gamesByMatch(match.id)" class="w-full max-w-5xl">
-                <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full">
+              <Card v-for="(game, gameNumber) in gamesByMatch(match.id)" class="w-full mb-4 max-w-4xl mt-4 border-2 border-gray-800 rounded-lg"
+              :class="{
+                  'bg-radial from-blue-200 to-blue-400': game.player1_points > game.player2_points,
+                  'bg-radial from-red-200 to-red-400': game.player1_points <= game.player2_points,
+                  'bg-gray-300': game.player1_points === game.player2_points
+                }">
+                <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-6">
                   <div class="text-left">
-                    <span class="text-lg">{{ game.began_at }}</span>
+                    <span class="text-sm text-gray-600">{{ game.began_at }}</span>
                   </div>
 
                   <div class="flex flex-col items-center leading-tight">
-                    <span class="text-xl font-bold whitespace-nowrap">
+                    <span class="text-xl font-semibold whitespace-nowrap">
                       {{ game.player1_points == null ? 0 : game.player1_points }} - {{ game.player2_points == null ? 0 : game.player2_points }}
                     </span>
                   </div>
@@ -65,7 +70,7 @@
                       {{ game.player1_name }}
                     </span>
 
-                    <span class="truncate font-medium">
+                    <span class="truncate font-medium text-gray-600">
                       #{{ gamesByMatch(match.id).length - gameNumber }}
                     </span>
                   </div>
