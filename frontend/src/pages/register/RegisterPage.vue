@@ -25,6 +25,7 @@
               placeholder="o.teu@email.com"
               class="w-full"
             />
+            <p v-if="validationErrors" class="text-sm text-red-600 mt-1" >{{ validationErrors.email?validationErrors.email[0]: '' }}</p>
           </div>
 
           <!-- Nickname -->
@@ -38,6 +39,7 @@
               placeholder="O teu nickname"
               class="w-full"
             />
+            <p v-if="validationErrors" class="text-sm text-red-600 mt-1">{{ validationErrors.name?validationErrors.name[0]: '' }}</p>
           </div>
 
           <!-- Password -->
@@ -51,6 +53,7 @@
               placeholder="A tua password"
               class="w-full"
             />
+            <p v-if="validationErrors"class="text-sm text-red-600 mt-1">{{ validationErrors.password?validationErrors.password[0]: '' }}</p>
           </div>
 
           <!-- Submit -->

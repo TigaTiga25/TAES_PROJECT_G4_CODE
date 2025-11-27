@@ -34,7 +34,7 @@ export const userStore = reactive({
   updateUser(partialData) {
     if (!this.user) return;
 
-    this.user = { ...this.user, ...partialData };
+    Object.assign(this.user, partialData)
     localStorage.setItem("user", JSON.stringify(this.user));
   },
 
