@@ -24,24 +24,22 @@ class MatchController extends Controller
     // CRIAR PARTIDA (Cobra a Aposta)
     // ------------------------------------------------------------------------
     public function create(Request $request){
-        
+
         $request->validate([
             'player1_user_id' => 'required|exists:users,id',
             'type' => 'nullable|in:3,9',
-            'stake' => 'nullable|integer|min:3' 
+            'stake' => 'nullable|integer|min:3'
         ]);
 
         $user = User::find($request->player1_user_id);
 
-        if($user->coins_balance < 3){ //entry fee
+        if($user->coins_balance < 5){ //entry fee
             return response()->json([
                 'status' => 400,
                 'message' => 'insufficient balance'
             ]);
         }
 
-        $user->coins_balance -= 3;
-        $user->save();
 
         $match = GameMatch::create([
             'player1_user_id' => $request->player1_user_id,
@@ -52,6 +50,17 @@ class MatchController extends Controller
             'player1_marks' => 0,
             'player2_marks' => 0,
             'began_at' => now(),
+        ]);
+
+        $user->coins_balance -= 5;
+        $user->save();
+
+        CoinTransaction::create([
+            'transaction_datetime' => now(),
+            'match_id' => $match->id,
+            'user_id' => $user->id,
+            'coin_transaction_type_id' => 3,
+            'coins' => -5,
         ]);
 
 
@@ -84,7 +93,7 @@ class MatchController extends Controller
             $match->ended_at = now();
             $match->save();
 
-            // 2. Calcular o Prémio conforme regras do enunciado 
+            // 2. Calcular o Prémio conforme regras do enunciado
             // "Winner receives combined stake... minus 1 coin commission"
             $totalPot = $match->stake * 2; // Aposta do Jogador + Aposta do Bot
             $prize = $totalPot - 1; // Comissão da plataforma

@@ -6,6 +6,9 @@ use Illuminate\Http\Request;
 use App\Models\GameMatch;
 use App\Models\Game;
 use Carbon\Carbon;
+use App\Models\User;
+use App\Models\CoinTransaction;
+
 
 class GameController extends Controller
 {
@@ -48,7 +51,7 @@ class GameController extends Controller
         $game->save();
 
         switch($request->player1_points){
-            case 120: 
+            case 120:
                 $match->player1_marks += 4;
                 break;
             case 0:
@@ -84,22 +87,53 @@ class GameController extends Controller
 
             $match->save();
 
+            //calcular coins ganhas -> vitoria = 5 coins; por cada capote acresce 3 coins; se for bandeira ganha 20 coins
+            if($match->player1_marks >= 4){
+                //Ganhou o jogador
+                $coinsEarned = 5;
+                foreach($games as $game){
+                    if($game->player1_points == 120){
+                        $coinsEarned = 20;
+                        break;
+                    }
+
+                    if($game->player1_points > 90 && $game->player1_points < 120){
+                        $coinsEarned += 3;
+                        break;
+                    }
+                }
+
+                $user = User::find($match->player1_user_id);
+                $user->coins_balance += $coinsEarned;
+                $user->save();
+                CoinTransaction::create([
+                    'transaction_datetime' => now(),
+                    'match_id' => $match->id,
+                    'user_id' => $user->id,
+                    'user_id' => $user->id,
+                    'coin_transaction_type_id' => 6,
+                    'coins' => $coinsEarned,
+                ]);
+            }
+
             return response()->json([
                 'status' => 201,
                 'message' => 'Jogo e partida finalizados com sucesso',
                 'match' => $match,
-                'games' => $games
+                'games' => $games,
+                'coinsEarned' => $coinsEarned?$coinsEarned:0
             ]);
         }
 
-        
+
         $match->save();
 
         return response()->json([
             'status' => 200,
             'message' => 'Jogo finalizado com sucesso',
             'data' => $game,
-            'gameNumber' => $games->count()
+            'gameNumber' => $games->count(),
+            'match' => $match
         ]);
     }
 }

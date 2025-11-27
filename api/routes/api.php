@@ -25,7 +25,7 @@ Route::get('/matches', [MatchController::class, 'index']);
 
 Route::get('/metadata', function (Request $request) {
     return [
-        "name" => "TAES 25025/26 Project API",
+        "name" => "TAES 2025/26 Project API",
         "version" => "0.0.1"
     ];
 });

@@ -14,6 +14,7 @@ class GameMatch extends Model
         'player1_user_id',
         'player2_user_id',
         'winner_user_id',
+        'loser_user_id',
         'status',
         'stake',
         'began_at',
