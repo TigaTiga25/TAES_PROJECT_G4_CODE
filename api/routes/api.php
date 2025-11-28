@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Histórico de Jogos do Utilizador
     Route::get('/matches/{user_id}/unfinished', [MatchController::class, 'unfinishedMatchesByUser']);
     Route::get('/matches/{user_id}/finished', [MatchController::class, 'finishedMatchesByUser']);
+    Route::get('/games/{user_id}/finished', [GameController::class, 'finishedGamesByUser']);
 
     // --- GAMES (Jogos individuais dentro da partida) ---
     Route::post('/matches/{match_id}/game', [GameController::class, 'create']);
