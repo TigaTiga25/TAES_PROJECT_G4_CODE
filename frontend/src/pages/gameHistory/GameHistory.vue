@@ -14,8 +14,8 @@
         </div>
 
         <Card v-for="match in matches" @click="toggleMatch(match.id)" class="w-full max-w-4xl rounded-lg relative hover:scale-105 transition-transform duration-300 ease-in-out" :class="{
-                'bg-blue-400': match.player1_marks > match.player2_marks,
-                'bg-red-400': match.player1_marks <= match.player2_marks,
+                'bg-radial from-blue-400 to-blue-500': match.player1_marks > match.player2_marks,
+                'bg-radial from-red-400 to-rose-500': match.player1_marks <= match.player2_marks,
                 'mb-6': isExpanded(match.id),
                 'mt-6': isExpanded(match.id)}">
             <CardHeader>
@@ -53,13 +53,13 @@
               <div v-show="isExpanded(match.id)" class="px-4 pb-6 pt-2 transition-all duration-300 ease-in-out">
                 <Card v-for="(game, gameNumber) in gamesByMatch(match.id)" :key="game.id" class="relative w-full mb-4 max-w-4xl mt-4 border-2 border-gray-800 rounded-lg"
                 :class="{
-                    'bg-radial from-blue-300 to-blue-500': game.player1_points > game.player2_points,
-                    'bg-radial from-red-300 to-red-500': game.player1_points < game.player2_points,
-                    'bg-radial from-gray-200 to-gray-400': game.player1_points === game.player2_points
+                    'bg-radial from-blue-300 to-indigo-600': game.player1_points > game.player2_points,
+                    'bg-radial from-red-300 to-rose-700': game.player1_points < game.player2_points,
+                    'bg-radial from-gray-300 to-gray-500': game.player1_points === game.player2_points
                   }">
                     <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-4">
                       <div class="text-left">
-                        <span class="text-sm text-gray-600">{{ formatDate(game.began_at, true) }}</span>
+                        <span class="text-sm text-gray-700">{{ formatDate(game.began_at, true) }}</span>
                       </div>
 
                       <div class="flex flex-col items-center justify-center leading-tight gap-1">
@@ -73,7 +73,7 @@
                           {{ game.player1_name }}
                         </span>
 
-                        <span class="truncate font-medium text-gray-600">
+                        <span class="truncate font-medium text-gray-700">
                           {{ getAccumulatedScore(gamesByMatch(match.id), gameNumber) }}
                         </span>
                       </div>
