@@ -13,11 +13,13 @@
           No matches found.
         </div>
 
-        <Card v-for="match in matches" class="w-full max-w-4xl rounded-lg" :class="{
+        <Card v-for="match in matches" @click="toggleMatch(match.id)" class="w-full max-w-4xl rounded-lg relative hover:scale-105 transition-transform duration-300 ease-in-out" :class="{
                 'bg-blue-400': match.player1_marks > match.player2_marks,
-                'bg-red-400': match.player1_marks <= match.player2_marks}">
+                'bg-red-400': match.player1_marks <= match.player2_marks,
+                'mb-6': isExpanded(match.id),
+                'mt-6': isExpanded(match.id)}">
             <CardHeader>
-              <CardTitle class="text-lg font-semibold text-gray-900">
+              <CardTitle class="text-xl font-semibold text-gray-900">
                 <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-6">
 
                   <div class="text-left">
@@ -48,34 +50,36 @@
 
                 </div>
               </CardTitle>
-              <Card v-for="(game, gameNumber) in gamesByMatch(match.id)" class="w-full mb-4 max-w-4xl mt-4 border-2 border-gray-800 rounded-lg"
-              :class="{
-                  'bg-radial from-blue-200 to-blue-400': game.player1_points > game.player2_points,
-                  'bg-radial from-red-200 to-red-400': game.player1_points <= game.player2_points,
-                  'bg-gray-300': game.player1_points === game.player2_points
-                }">
-                <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-6">
-                  <div class="text-left">
-                    <span class="text-sm text-gray-600">{{ game.began_at }}</span>
-                  </div>
+              <div v-show="isExpanded(match.id)" class="px-4 pb-6 pt-2 transition-all duration-300 ease-in-out">
+                <Card v-for="(game, gameNumber) in gamesByMatch(match.id)" :key="game.id" class="w-full mb-4 max-w-4xl mt-4 border-2 border-gray-800 rounded-lg"
+                :class="{
+                    'bg-radial from-blue-300 to-blue-500': game.player1_points > game.player2_points,
+                    'bg-radial from-red-300 to-red-500': game.player1_points < game.player2_points,
+                    'bg-radial from-gray-200 to-gray-400': game.player1_points === game.player2_points
+                  }">
+                  <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-6">
+                    <div class="text-left">
+                      <span class="text-sm text-gray-600">{{ game.began_at }}</span>
+                    </div>
 
-                  <div class="flex flex-col items-center leading-tight">
-                    <span class="text-xl font-semibold whitespace-nowrap">
-                      {{ game.player1_points == null ? 0 : game.player1_points }} - {{ game.player2_points == null ? 0 : game.player2_points }}
-                    </span>
-                  </div>
+                    <div class="flex flex-col items-center leading-tight">
+                      <span class="text-xl font-semibold whitespace-nowrap">
+                        {{ game.player1_points == null ? 0 : game.player1_points }} - {{ game.player2_points == null ? 0 : game.player2_points }}
+                      </span>
+                    </div>
 
-                  <div class="flex flex-col text-right leading-tight">
-                    <span class="truncate font-medium">
-                      {{ game.player1_name }}
-                    </span>
+                    <div class="flex flex-col text-right leading-tight">
+                      <span class="truncate font-medium">
+                        {{ game.player1_name }}
+                      </span>
 
-                    <span class="truncate font-medium text-gray-600">
-                      #{{ gamesByMatch(match.id).length - gameNumber }}
-                    </span>
+                      <span class="truncate font-medium text-gray-600">
+                        #{{ gamesByMatch(match.id).length - gameNumber }}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              </div>
             </CardHeader>
         </Card>
     </div>
@@ -137,6 +141,19 @@ const getGames = async () => {
 const gamesByMatch = (matchId) => {
   return games.value.filter(game => game.match_id === matchId);
 }
+
+const expandedMatches = ref([])
+
+const toggleMatch = (matchId) => {
+  const index = expandedMatches.value.indexOf(matchId)
+  if (index === -1) {
+    expandedMatches.value.push(matchId)
+  } else {
+    expandedMatches.value.splice(index, 1)
+  }
+}
+
+const isExpanded = (matchId) => expandedMatches.value.includes(matchId)
 
 const formatDate = (date) => {
   const newDate = new Date(date);
