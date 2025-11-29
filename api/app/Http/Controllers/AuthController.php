@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Hash; // Importante para encriptar a password
 use Illuminate\Auth\Events\Registered;
 use App\Models\CoinTransaction;
 
@@ -22,27 +22,35 @@ class AuthController extends Controller
             'password' => 'required|string|min:8',
         ]);
 
-        // 1. Criar o Utilizador com 10 moedas (Bónus de Boas-vindas)
+        // 1. Criar o Utilizador
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
+            // CORREÇÃO DE SEGURANÇA: Encriptar a password
             'password' => Hash::make($validatedData['password']),
             'coins_balance' => 10, // Começa com 10 moedas
         ]);
 
-        // 2. REGISTAR A TRANSAÇÃO NO HISTÓRICO (O que faltava)
-        // Usamos o ID 1 porque definimos antes que 1 = Bonus
+        // 2. REGISTAR A TRANSAÇÃO NO HISTÓRICO
         CoinTransaction::create([
             'user_id' => $user->id,
-            'coin_transaction_type_id' => 1,
-            'coin_amount' => 10,
+            'coin_transaction_type_id' => 1, // Tipo 1 = Bónus Inicial
+            
+            // CORREÇÃO: Usar 'coins' (igual ao Model)
+            'coins' => 10, 
+            
+            // CORREÇÃO: Data/Hora atual (obrigatório)
+            'transaction_datetime' => now(),
+
+            // NOTA: Se der erro 500 por causa do match_id, descomenta a linha abaixo:
+            // 'match_id' => null, 
         ]);
 
-        // 3. Dispara o evento de Registo (para enviar email de verificação)
+        // 3. Dispara o evento de Registo
         event(new Registered($user));
 
         return response()->json([
-            'message' => 'Registo efetuado com sucesso! Por favor verifique o seu email para ativar a conta.',
+            'message' => 'Registo efetuado com sucesso! Por favor verifique o seu email.',
             'user' => $user
         ], 201);
     }
@@ -60,7 +68,6 @@ class AuthController extends Controller
         if (Auth::attempt($credentials)) {
             $user = $request->user();
 
-            // VERIFICAÇÃO DE SEGURANÇA: Impede login se não validou email
             if (!$user->hasVerifiedEmail()) {
                 return response()->json(['message' => 'Email não verificado.'], 403);
             }
@@ -77,7 +84,6 @@ class AuthController extends Controller
             'message' => 'Email ou password inválida.'
         ], 401);
     }
-
 
     // ---------------------------
     // LOGOUT

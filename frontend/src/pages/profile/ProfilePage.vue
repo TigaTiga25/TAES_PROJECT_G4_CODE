@@ -10,107 +10,103 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 
-const router = useRouter()
-const fileInputRef = ref(null) // Referência para o input invisível
+// Avatar Components
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-// Dados do formulário
+const router = useRouter()
+const fileInputRef = ref(null) 
+
+// Form data
 const form = ref({
   name: userStore.user?.name || '',
   password: ""
 })
 
-// Variáveis para o upload
+// Upload variables
 const selectedFile = ref(null)
 const previewImage = ref(null)
 
-
+// Define a tua API URL
 const API_URL = 'http://localhost:8000'
 
-
-
+// Lógica de visualização da imagem
 const displayImage = computed(() => {
-   
-    if (previewImage.value) {
-        return previewImage.value
-    }
-
+    // 1. Prioridade: Preview local (se o user acabou de escolher um ficheiro)
+    if (previewImage.value) return previewImage.value
     
+    // 2. Prioridade: Foto da base de dados
     if (userStore.user?.photo_avatar_filename) {
         return `${API_URL}/storage/photos_avatars/${userStore.user.photo_avatar_filename}`
     }
 
-    // 3. Fallback: Retorna null para ativar o v-else das iniciais
+    // 3. Fallback: Null (o componente Avatar trata disto sozinho e mostra as iniciais)
     return null
 })
 
-// Quando o utilizador seleciona um ficheiro
+// Iniciais do nome para o Fallback (ex: "João Silva" -> "J")
+const userInitials = computed(() => {
+    const name = form.value.name || userStore.user?.name || '?'
+    return name.charAt(0).toUpperCase()
+})
+
+// Quando o user escolhe um ficheiro
 function onFileChange(event) {
     const file = event.target.files[0]
     if (!file) return
-
     selectedFile.value = file
     previewImage.value = URL.createObjectURL(file)
 }
 
-
+// Clicar no botão aciona o input escondido
 function triggerFileInput() {
     fileInputRef.value.click()
 }
 
+// Guardar perfil e enviar ficheiro
 async function saveProfile() {
-    
-    if (!userStore.user || !userStore.user.id) {
-        alert("Erro: Utilizador não identificado. Faz login novamente.")
-        return
-    }
+    if (!userStore.user?.id) return
 
     try {
         const formData = new FormData()
-
-     
+        
+        // Método spoofing para Laravel (PUT via POST) para aceitar ficheiros
         formData.append('_method', 'PUT')
-
-        // Dados normais
+        
         formData.append('name', form.value.name)
-
+        
         if (form.value.password) {
             formData.append('password', form.value.password)
         }
-
-       
+        
+        // IMPORTANTE: O nome 'file' tem de bater certo com o Controller do Laravel
         if (selectedFile.value) {
             formData.append('file', selectedFile.value) 
         }
 
-        // Enviar pedido
-       
         const response = await axios.post(
             `${API_URL}/api/users/${userStore.user.id}`, 
-            formData,
+            formData, 
             {
                 headers: { 'Content-Type': 'multipart/form-data' }
             }
         )
 
-       
-        const updatedUser = response.data.data 
-        userStore.login(userStore.token, updatedUser)
-
-        alert("Perfil atualizado com sucesso!")
-
+        // Atualizar a Store com os dados novos 
+        userStore.login(userStore.token, response.data.data)
+        
+        alert("Profile updated successfully!")
+        
         // Limpezas
         selectedFile.value = null
-        previewImage.value = null
+        previewImage.value = null // Limpa o preview para assumir a nova foto da BD
         form.value.password = ""
 
     } catch (error) {
-        console.error("Erro no update:", error)
+        console.error(error)
         if (error.response?.status === 422) {
-            // Erro de validação do Laravel (ex: imagem muito grande)
-            console.log("Erros de validação:", error.response.data.errors)
-            alert("Erro nos dados: " + JSON.stringify(error.response.data.errors))
+             alert("Validation Error: " + JSON.stringify(error.response.data.errors))
         } else {
-            alert("Erro ao guardar. Verifica a consola.")
+             alert("Error updating profile.")
         }
     }
 }
@@ -122,41 +118,38 @@ onMounted(() => {
 
 <template>
   <div class="max-w-xl mx-auto p-6 space-y-8">
-    <h1 class="text-3xl font-bold">Perfil</h1>
+    <h1 class="text-3xl font-bold">Profile</h1>
 
     <Card>
       <CardHeader>
-        <CardTitle>Editar Perfil</CardTitle>
-        <CardDescription>Muda a tua foto e nome.</CardDescription>
+        <CardTitle>Edit Profile</CardTitle>
+        <CardDescription>Change your photo and name.</CardDescription>
       </CardHeader>
 
       <CardContent class="space-y-6">
         
         <div class="flex items-center gap-6">
             
-            <div 
-                class="w-24 h-24 rounded-2xl overflow-hidden bg-emerald-600 text-white flex items-center justify-center shadow-md font-bold border-2 border-emerald-100 shrink-0 relative group"
-            >
-                <img
-                  v-if="displayImage"
-                  :src="displayImage"
-                  alt="Avatar"
-                  class="w-full h-full object-cover"
+            <!-- Componente Avatar -->
+            <Avatar class="w-24 h-24 border-2 border-emerald-100 shadow-md">
+                <!-- Imagem (só aparece se displayImage for válido) -->
+                <AvatarImage 
+                    
+                    :src="displayImage" 
+                    class="object-cover" 
+                    alt="User Photo" 
                 />
-                <span v-else class="text-3xl">
-                    {{ form.name?.[0]?.toUpperCase() || '?' }}
-                </span>
-
-                <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
-                    📷
-                </div>
-            </div>
+                <!-- Fallback (aparece se não houver imagem) -->
+                <AvatarFallback class="bg-emerald-600 text-white text-3xl font-bold">
+                    {{ userInitials }}
+                </AvatarFallback>
+            </Avatar>
 
             <div class="space-y-2">
-                <Label>Foto de Perfil</Label>
+                <Label>Profile Photo</Label>
                 <div class="flex gap-2">
                     <Button variant="outline" size="sm" @click="triggerFileInput">
-                        Escolher Ficheiro
+                        Choose File
                     </Button>
                     <input 
                         ref="fileInputRef"
@@ -167,26 +160,26 @@ onMounted(() => {
                     />
                 </div>
                 <p class="text-xs text-slate-500">
-                    Aceita JPG ou PNG. Máx 2MB.
+                    Max 4MB (JPG/PNG).
                 </p>
             </div>
         </div>
 
         <div class="space-y-2">
-          <Label>Nome de Jogador</Label>
-          <Input v-model="form.name" placeholder="O teu nome" />
+          <Label>Player Name</Label>
+          <Input v-model="form.name" placeholder="Your name" />
         </div>
 
         <div class="space-y-2 pt-4 border-t">
-          <Label>Nova Password (Opcional)</Label>
+          <Label>New Password (Optional)</Label>
           <Input type="password" v-model="form.password" />
         </div>
 
       </CardContent>
 
       <CardFooter class="flex justify-between">
-        <Button variant="ghost" @click="router.push('/home')">Cancelar</Button>
-        <Button @click="saveProfile">Guardar Alterações</Button>
+        <Button variant="ghost" @click="router.push('/home')">Cancel</Button>
+        <Button @click="saveProfile">Save Changes</Button>
       </CardFooter>
     </Card>
   </div>

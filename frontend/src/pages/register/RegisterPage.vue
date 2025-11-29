@@ -14,7 +14,6 @@
       <CardContent class="space-y-5">
         <form @submit.prevent="handleRegister" class="space-y-5">
 
-          <!-- Email -->
           <div class="space-y-1">
             <label class="block text-sm font-medium text-slate-700">
               Email
@@ -25,10 +24,11 @@
               placeholder="o.teu@email.com"
               class="w-full"
             />
-            <p v-if="validationErrors" class="text-sm text-red-600 mt-1" >{{ validationErrors.email?validationErrors.email[0]: '' }}</p>
+            <p v-if="validationErrors?.email" class="text-sm text-red-600 mt-1">
+              {{ validationErrors.email[0] }}
+            </p>
           </div>
 
-          <!-- Nickname -->
           <div class="space-y-1">
             <label class="block text-sm font-medium text-slate-700">
               Nickname
@@ -39,10 +39,11 @@
               placeholder="O teu nickname"
               class="w-full"
             />
-            <p v-if="validationErrors" class="text-sm text-red-600 mt-1">{{ validationErrors.name?validationErrors.name[0]: '' }}</p>
+            <p v-if="validationErrors?.name" class="text-sm text-red-600 mt-1">
+              {{ validationErrors.name[0] }}
+            </p>
           </div>
 
-          <!-- Password -->
           <div class="space-y-1">
             <label class="block text-sm font-medium text-slate-700">
               Password
@@ -53,10 +54,15 @@
               placeholder="A tua password"
               class="w-full"
             />
-            <p v-if="validationErrors"class="text-sm text-red-600 mt-1">{{ validationErrors.password?validationErrors.password[0]: '' }}</p>
+            <p v-if="validationErrors?.password" class="text-sm text-red-600 mt-1">
+              {{ validationErrors.password[0] }}
+            </p>
           </div>
 
-          <!-- Submit -->
+          <div v-if="errorMessage" class="p-3 bg-red-100 text-red-700 rounded text-sm">
+            {{ errorMessage }}
+          </div>
+
           <Button type="submit" class="w-full py-3 text-base">
             Sign Up
           </Button>
@@ -77,7 +83,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios' // 1. IMPORTAR O AXIOS
+import axios from 'axios' 
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -92,49 +98,42 @@ import {
 
 const router = useRouter()
 
+// Variáveis do formulário
 const email = ref('')
 const nickname = ref('')
 const password = ref('')
 
-// 2. ADICIONAR ESTADO PARA ERROS
+// Estado de erros
 const errorMessage = ref(null)
 const validationErrors = ref(null)
 
-// 3. SUBSTITUIR A FUNÇÃO DE REGISTO
 const handleRegister = async () => {
   errorMessage.value = null
   validationErrors.value = null
 
   try {
-    // 4. Enviar os dados para a API (Laravel)
-    // O backend espera 'name', por isso enviamos o 'nickname' como 'name'
     const response = await axios.post('/api/register', {
-      name: nickname.value,
+      name: nickname.value, 
       email: email.value,
       password: password.value
     });
 
-     // "Registo efetuado... verifique o email"
     alert(response.data.message);
-
-    // 7. Redirecionar
-    router.push('/');
+    router.push('/'); // Redireciona para o login
 
   } catch (error) {
-    // 8. FALHA! (Ex: Email já existe, password curta, etc.)
     if (error.response) {
       if (error.response.status === 422) {
-        // 422 = Erro de Validação (ex: 'email já existe' ou 'password curta')
+        // Erros de validação (ex: email já existe)
         validationErrors.value = error.response.data.errors;
       } else {
-        // Outro erro (ex: 500)
-        errorMessage.value = "Ocorreu um erro inesperado. Tente mais tarde."
+        // Erros de servidor (500, etc)
+        errorMessage.value = "Ocorreu um erro no servidor. Tente novamente mais tarde.";
+        console.error("Erro do servidor:", error.response.data);
       }
     } else {
-      // Erro de rede (servidor desligado?)
-      errorMessage.value = "Não foi possível ligar ao servidor."
+      errorMessage.value = "Não foi possível ligar ao servidor.";
     }
-    console.error('Falha no registo:', error);
   }
 }
 

@@ -24,25 +24,27 @@ import { Badge } from '@/components/ui/badge'
 // --- Logic ---
 const router = useRouter()
 const route = useRoute()
+const API_URL = 'http://localhost:8000' // Tem de ser igual ao do Profile
 
-// Variable to control the Avatar Modal
+// Variável para controlar o Modal de Zoom do Avatar
 const showAvatarModal = ref(false)
 
-// Define if navbar is visible
+// Define se a navbar é visível
 const showNavbar = computed(() => {
   const hiddenRoutes = ['/', '/login', '/register', '/gameBoard/'];
   return !hiddenRoutes.some(r => route.path === r || route.path.startsWith('/gameBoard/'));
 });
 
-// --- AVATAR ---
+
 const avatarUrl = computed(() => {
   const u = userStore.user
   
-  // 1. Real Image
-  if (u && u.avatar) {
-    return u.avatar
+  // 1. Imagem Real: Verifica o campo correto 'photo_avatar_filename' na BD
+  if (u && u.photo_avatar_filename) {
+    return `${API_URL}/storage/photos_avatars/${u.photo_avatar_filename}`
   }
-  // 2. DiceBear Fallback
+
+  // 2. DiceBear Fallback (Se não houver foto, gera boneco)
   const seed = u?.name || 'Player'
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`
 })
@@ -52,7 +54,7 @@ const initials = computed(() => {
   return u?.name ? u.name[0].toUpperCase() : '?'
 })
 
-// Navigation Functions
+// Funções de Navegação
 function goHome() { router.push('/home') }
 function goTo(path) { router.push(path) }
 
@@ -66,11 +68,13 @@ function handleLogout() {
   <nav v-if="showNavbar" class="border-b bg-white/90 backdrop-blur-sm sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
 
+      <!-- Logo -->
       <div class="flex items-center gap-3 cursor-pointer" @click="goHome">
         <span class="text-xl font-bold">BISCA</span>
         <span class="text-sm text-slate-600">Single Player</span>
       </div>
 
+      <!-- Menu Central -->
       <NavigationMenu class="hidden md:flex">
         <NavigationMenuList>
           <NavigationMenuItem>
@@ -91,7 +95,10 @@ function handleLogout() {
         </NavigationMenuList>
       </NavigationMenu>
 
+      <!-- Lado Direito (Login / User) -->
       <div class="flex items-center gap-4">
+        
+        <!-- Se NÃO estiver logado -->
         <NavigationMenu v-if="!userStore.isLoggedIn">
           <NavigationMenuList>
             <NavigationMenuItem>
@@ -100,55 +107,60 @@ function handleLogout() {
           </NavigationMenuList>
         </NavigationMenu>
         
-        <Badge 
-          v-if="userStore.isLoggedIn" 
-          variant="secondary" 
-          class="px-3 py-1 text-sm cursor-pointer hover:bg-slate-200 transition select-none"
-          @click="goTo('/transactions')" 
-        >
-          🪙 {{ userStore.user?.coins_balance || 0 }}
-        </Badge>
-
-        <DropdownMenu v-if="userStore.isLoggedIn">
-          <DropdownMenuTrigger class="focus:outline-none flex items-center gap-3 group">
-            
-            <span class="font-medium text-sm text-slate-700 group-hover:text-black transition hidden sm:block">
-              {{ userStore.user?.name || 'Player' }}
-            </span>
-            
-            <Avatar 
-                :key="avatarUrl" 
-                class="cursor-pointer bg-slate-100 group-hover:ring-2 group-hover:ring-slate-200 transition"
+        <!-- Se ESTIVER logado -->
+        <template v-else>
+            <!-- Badge Moedas -->
+            <Badge 
+              variant="secondary" 
+              class="px-3 py-1 text-sm cursor-pointer hover:bg-slate-200 transition select-none"
+              @click="goTo('/transactions')" 
             >
-              <AvatarImage :src="avatarUrl" />
-              <AvatarFallback class="bg-slate-200 text-slate-700 font-bold">
-                {{ initials }}
-              </AvatarFallback>
-            </Avatar>
+              🪙 {{ userStore.user?.coins_balance || 0 }}
+            </Badge>
 
-          </DropdownMenuTrigger>
+            <!-- Dropdown User -->
+            <DropdownMenu>
+              <DropdownMenuTrigger class="focus:outline-none flex items-center gap-3 group">
+                
+                <span class="font-medium text-sm text-slate-700 group-hover:text-black transition hidden sm:block">
+                  {{ userStore.user?.name || 'Player' }}
+                </span>
+                
+                <Avatar 
+                    class="cursor-pointer bg-slate-100 group-hover:ring-2 group-hover:ring-slate-200 transition"
+                >
+                  <!-- Aqui usamos o avatarUrl correto -->
+                  <AvatarImage  :src="avatarUrl" class="object-cover" />
+                  <AvatarFallback class="bg-slate-200 text-slate-700 font-bold">
+                    {{ initials }}
+                  </AvatarFallback>
+                </Avatar>
 
-          <DropdownMenuContent class="w-48 mr-4">
-            <DropdownMenuItem @click="goTo('/profile')" class="cursor-pointer">
-              👤 Profile
-            </DropdownMenuItem>
+              </DropdownMenuTrigger>
 
-            <DropdownMenuItem @click="showAvatarModal = true" class="cursor-pointer">
-              🖼️ View Avatar
-            </DropdownMenuItem>
-            
-            <DropdownMenuSeparator />
-            
-            <DropdownMenuItem @click="handleLogout" class="cursor-pointer text-red-600 focus:text-red-600">
-              🚪 Logout
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuContent class="w-48 mr-4">
+                <DropdownMenuItem @click="goTo('/profile')" class="cursor-pointer">
+                  👤 Profile
+                </DropdownMenuItem>
+
+                <DropdownMenuItem @click="showAvatarModal = true" class="cursor-pointer">
+                  🖼️ View Avatar
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                
+                <DropdownMenuItem @click="handleLogout" class="cursor-pointer text-red-600 focus:text-red-600">
+                  🚪 Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+        </template>
 
       </div>
     </div>
   </nav>
 
+  <!-- Avatar Modal (Zoom) -->
   <div v-if="showAvatarModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" @click="showAvatarModal = false">
     
     <div class="bg-white p-2 rounded-xl shadow-2xl max-w-sm w-full relative" @click.stop>

@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage; 
+use Illuminate\Support\Facades\Hash;    
 
 class UserController extends Controller
 {
     // --------------------------------------------------------------------
-    // OBTER TRANSAÇÕES (Corrigido para 'coins' e 'transaction_datetime')
+    // OBTER TRANSAÇÕES
     // --------------------------------------------------------------------
     public function getTransactions(Request $request)
     {
@@ -48,7 +50,7 @@ class UserController extends Controller
             ]);
 
             $euros = $request->cost;
-            $coinsToAdd = $euros * 10; // 1€ = 10 Moedas
+            $coinsToAdd = $euros * 10; 
 
             $user = $request->user();
 
@@ -65,7 +67,6 @@ class UserController extends Controller
                     'coin_transaction_type_id' => 2,
                     'coins' => $coinsToAdd, 
                     'transaction_datetime' => now(), 
-                  
                 ]);
             });
 
@@ -81,10 +82,47 @@ class UserController extends Controller
         }
     }
 
+    // --------------------------------------------------------------------
+    // ATUALIZAR PERFIL (FOTO + NOME + PASS)
+    // --------------------------------------------------------------------
     public function update(Request $request, User $user)
     {
-        $request->validate(['name' => 'required|string|max:255']);
-        $user->update($request->only('name'));
-        return response()->json(['message' => 'Perfil atualizado!']);
+        // 1. Validar tudo (nome, password e ficheiro)
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'password' => 'nullable|string|min:3',
+            'file' => 'nullable|image|max:4096', // Valida se é imagem e tamanho máx 4MB
+        ]);
+
+        // 2. Atualizar Nome
+        $user->name = $validated['name'];
+
+        // 3. Atualizar Password (apenas se foi enviada)
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        // 4. Lógica da Imagem
+        if ($request->hasFile('file')) {
+            
+            // A. Apagar a foto antiga se existir 
+            if ($user->photo_avatar_filename && Storage::disk('public')->exists('photos_avatars/' . $user->photo_avatar_filename)) {
+                Storage::disk('public')->delete('photos_avatars/' . $user->photo_avatar_filename);
+            }
+
+            // B. Guardar a nova foto na pasta 'storage/app/public/photos_avatars'
+            $path = $request->file('file')->store('photos_avatars', 'public');
+
+            // C. Guardar apenas o nome do ficheiro na BD (ex: 'hash.jpg')
+            $user->photo_avatar_filename = basename($path);
+        }
+
+        $user->save();
+
+        // Retornar o user atualizado para o Vue atualizar a store
+        return response()->json([
+            'message' => 'Profile updated successfully!',
+            'data' => $user
+        ]);
     }
 }
