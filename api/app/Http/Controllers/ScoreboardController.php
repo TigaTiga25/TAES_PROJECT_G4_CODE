@@ -19,93 +19,96 @@ class ScoreboardController extends Controller
         }
         // --- ESTATÍSTICAS GERAIS ---
 
-        $totalMatches = GameMatch::where(function($query) use ($userId) {
+        $totalMatches = GameMatch::where('status', 'Ended')
+            ->where(function($query) use ($userId) {
             $query->where('player1_user_id', $userId)
                   ->orWhere('player2_user_id', $userId);
-        })->count();
+            })->count();
 
-        // vitórias contra outros jogadores (winner_user_id definido e players diferentes)
-        $humanWins = GameMatch::where('winner_user_id', $userId)->count();
-
-        // vitórias contra bot (és sempre player1)
-        $botWins = GameMatch::where('player1_user_id', $userId)
-            ->where('player2_user_id', $userId)
-            ->whereColumn('player1_marks', '>', 'player2_marks')
+        // Vitórias em Partidas
+        $winsMatches = GameMatch::where('status', 'Ended')
+            ->where('winner_user_id', $userId)
             ->count();
 
-        $winsMatches = $humanWins + $botWins;
+        // Tempo Total (Apenas de jogos terminados)
+        $totalTime = Game::where('status', 'Ended')
+            ->where(function($query) use ($userId) {
+                $query->where('player1_user_id', $userId)
+                      ->orWhere('player2_user_id', $userId);
+            })->sum('total_time');
+
+        $totalGames = Game::where('status', 'Ended')
+            ->where(function($query) use ($userId) {
+                $query->where('player1_user_id', $userId)
+                      ->orWhere('player2_user_id', $userId);
+            })->count();
+
+        $winsGames = Game::where('status', 'Ended')
+            ->where('winner_user_id', $userId)
+            ->count();
 
 
-        $totalTime = GameMatch::where(function($query) use ($userId) {
-            $query->where('player1_user_id', $userId)
-                  ->orWhere('player2_user_id', $userId);
-        })->sum('total_time');
+        // Pontos (Apenas de jogos terminados)
+        $pointsP1 = Game::where('status', 'Ended')
+            ->where('player1_user_id', $userId)
+            ->sum('player1_points');
 
-        $totalGames = Game::where(function($query) use ($userId) {
-            $query->where('player1_user_id', $userId)
-                  ->orWhere('player2_user_id', $userId);
-        })->count();
-
-        $winsGames = Game::where(function($query) use ($userId) {
-            $query->where('winner_user_id', $userId)
-                  ->whereColumn('player1_user_id', '!=', 'player2_user_id');
-        })->orWhere(function($query) use ($userId) {
-            $query->where('player1_user_id', $userId)
-                  ->where('player2_user_id', $userId)
-                  ->whereColumn('player1_points', '>', 'player2_points');
-        })->count();
-
-        $pointsP1 = Game::where('player1_user_id', $userId)->sum('player1_points');
-
-
-        $pointsP2 = Game::where('player2_user_id', $userId)
-                        ->where('player1_user_id', '!=', $userId)
-                        ->sum('player2_points');
+        $pointsP2 = Game::where('status', 'Ended')
+            ->where('player2_user_id', $userId)
+            ->where('player1_user_id', '!=', $userId) // Só soma se não for o próprio user (Bot)
+            ->sum('player2_points');
 
         $totalPoints = $pointsP1 + $pointsP2;
 
         // --- ESTATÍSTICAS DETALHADAS (Tabela Games) ---
 
-        $draws = Game::where(function ($query) use ($userId) {
-            $query->where('player1_user_id', $userId)
-                  ->where('player1_points', 60);
-        })->orWhere(function ($query) use ($userId) {
-            $query->where('player2_user_id', $userId)
-                  ->where('player2_points', 60);
-        })->count();
+        $draws = Game::where('status', 'Ended')
+            ->where('is_draw', 1)
+            ->where(function($query) use ($userId) {
+                $query->where('player1_user_id', $userId)
+                      ->orWhere('player2_user_id', $userId);
+            })->count();
 
-        $riscas = Game::where(function ($query) use ($userId) {
-            $query->where('player1_user_id', $userId)
-                ->whereBetween('player1_points', [61, 89]);
-        })->orWhere(function ($query) use ($userId) {
-            $query->where('player2_user_id', $userId)
-                ->whereBetween('player2_points', [61, 89]);
-        })->count();
+        $riscas = Game::where('status', 'Ended')
+            ->where(function($masterQuery) use ($userId) {
+                $masterQuery->where(function ($query) use ($userId) {
+                    $query->where('player1_user_id', $userId)->whereBetween('player1_points', [61, 89]);
+                })->orWhere(function ($query) use ($userId) {
+                    $query->where('player2_user_id', $userId)
+                          ->where('player1_user_id', '!=', $userId)
+                          ->whereBetween('player2_points', [61, 89]);
+                });
+            })->count();
 
-        // --- ACHIEVEMENTS ---
-        $capotes = Game::where(function ($query) use ($userId) {
-            $query->where('player1_user_id', $userId)
-                ->whereBetween('player1_points', [90, 119]);
-        })->orWhere(function ($query) use ($userId) {
-            $query->where('player2_user_id', $userId)
-                ->whereBetween('player2_points', [90, 119]);
-        })->count();
+        $capotes = Game::where('status', 'Ended')
+            ->where(function($masterQuery) use ($userId) {
+                $masterQuery->where(function ($query) use ($userId) {
+                    $query->where('player1_user_id', $userId)->whereBetween('player1_points', [90, 119]);
+                })->orWhere(function ($query) use ($userId) {
+                    $query->where('player2_user_id', $userId)
+                          ->where('player1_user_id', '!=', $userId)
+                          ->whereBetween('player2_points', [90, 119]);
+                });
+            })->count();
 
-        $bandeiras = Game::where(function ($query) use ($userId) {
-            $query->where('player1_user_id', $userId)
-                ->where('player1_points', 120);
-        })->orWhere(function ($query) use ($userId) {
-            $query->where('player2_user_id', $userId)
-                ->where('player2_points', 120);
-        })->count();
+        $bandeiras = Game::where('status', 'Ended')
+            ->where(function($masterQuery) use ($userId) {
+                $masterQuery->where(function ($query) use ($userId) {
+                    $query->where('player1_user_id', $userId)->where('player1_points', 120);
+                })->orWhere(function ($query) use ($userId) {
+                    $query->where('player2_user_id', $userId)
+                          ->where('player1_user_id', '!=', $userId)
+                          ->where('player2_points', 120);
+                });
+            })->count();
 
         // --- RESPOSTA JSON ---
         return response()->json([
             'totalMatches' => $totalMatches,
-            'winsmatches'         => $winsMatches,
+            'winsMatches'  => $winsMatches,
             'totalTime'    => $totalTime,
             'totalGames'   => $totalGames,
-            'winsGames'         => $winsGames,
+            'winsGames'    => $winsGames,
             'totalPoints'  => $totalPoints,
             'draws'        => $draws,
             'riscas'       => $riscas,
