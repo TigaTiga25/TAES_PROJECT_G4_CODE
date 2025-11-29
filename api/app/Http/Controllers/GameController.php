@@ -15,7 +15,7 @@ class GameController extends Controller
 {
     public function create($match_id)
     {
-        $match = GameMatch::find($match_id);
+        $match = GameMatch::findOrFail($match_id);
 
         if($match->status !== 'Playing') {
             return response()->json(['message' => 'Esta partida não está ativa.'], 400);
@@ -111,6 +111,9 @@ class GameController extends Controller
                 //calcular coins ganhas -> vitoria = 5 coins; por cada capote acresce 3 coins; se for bandeira ganha 20 coins
                 if($match->player1_marks >= 4){
                     //Ganhou o jogador
+                    $match->winner_user_id = $match->player1_user_id;
+                    $match->loser_user_id = null;
+
                     $coinsEarned = 5;
                     foreach($games as $game){
                         if($game->player1_points == 120){
@@ -133,7 +136,13 @@ class GameController extends Controller
                         'coin_transaction_type_id' => 6,
                         'coins' => $coinsEarned,
                     ]);
+                }else{
+                    //Perdeu o jogador
+                    $match->winner_user_id = null;
+                    $match->loser_user_id = $match->player1_user_id;
                 }
+
+                $match->save();
 
                 return response()->json([
                     'status' => 201,
