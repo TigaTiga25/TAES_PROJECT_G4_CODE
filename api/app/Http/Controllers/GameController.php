@@ -156,4 +156,13 @@ class GameController extends Controller
             ]);
         });
     }
+
+    public function finishedGamesByUser($user_id){
+        $matches = Game::where('player1_user_id', $user_id)->where('status', 'Ended')->orderBy('began_at', 'desc')->get();
+
+        return response()->json([
+            'status' => 200,
+            'data' => $matches
+        ]);
+    }
 }

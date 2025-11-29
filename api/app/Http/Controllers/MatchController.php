@@ -133,6 +133,7 @@ class MatchController extends Controller
                         'u1.name as player1_name',
                         'u2.name as player2_name'
                     )
+                    ->orderBy('began_at', 'desc')
                     ->get();
 
         return response()->json([
