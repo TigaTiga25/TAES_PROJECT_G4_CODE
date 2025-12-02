@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage; 
-use Illuminate\Support\Facades\Hash;    
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -16,110 +16,144 @@ class UserController extends Controller
     // --------------------------------------------------------------------
     public function getTransactions(Request $request)
     {
-        try {
-            $user = $request->user();
+        $transactions = $request->user()
+            ->transactions()
+            ->orderBy('date', 'desc')
+            ->get();
 
-            $transactions = DB::table('coin_transactions')
-                ->join('coin_transaction_types', 'coin_transactions.coin_transaction_type_id', '=', 'coin_transaction_types.id')
-                ->where('coin_transactions.user_id', $user->id)
-                ->select(
-                    'coin_transactions.id',
-                    'coin_transactions.coins as amount', 
-                    'coin_transactions.transaction_datetime as date', 
-                    'coin_transaction_types.name as type_name'
-                )
-                ->orderBy('coin_transactions.transaction_datetime', 'desc')
-                ->get();
-
-            return response()->json(['data' => $transactions]);
-
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro SQL: ' . $e->getMessage()], 500);
-        }
+        return response()->json(['data' => $transactions]);
     }
 
     // --------------------------------------------------------------------
-    // COMPRAR MOEDAS
+    // COMPRAR MOEDAS 
     // --------------------------------------------------------------------
     public function buyCoins(Request $request)
     {
-        try {
-            $request->validate([
-                'cost' => 'required|integer|min:1',
-                'payment_type' => 'required|string'
-            ]);
+        $request->validate([
+            'cost' => 'required|integer|min:1',
+            'payment_type' => 'required|string'
+        ]);
 
-            $euros = $request->cost;
-            $coinsToAdd = $euros * 10; 
+        $euros = $request->cost;
+        $coinsToAdd = $euros * 10; 
+        $user = $request->user();
 
-            $user = $request->user();
+        // 1. Criar Transação
+        $user->transactions()->create([
+            'type' => 'I',
+            'value' => $coinsToAdd,
+            'description' => 'Bought ' . $coinsToAdd . ' coins',
+            'date' => now(),
+        ]);
 
-            DB::transaction(function () use ($user, $coinsToAdd) {
-                
-                // 1. Atualizar Saldo do User
-                DB::table('users')
-                    ->where('id', $user->id)
-                    ->increment('coins_balance', $coinsToAdd);
+        // 2. Atualizar Saldo
+        $user->coins_balance += $coinsToAdd;
+        $user->save();
 
-                // 2. Registar Transação
-                DB::table('coin_transactions')->insert([
-                    'user_id' => $user->id,
-                    'coin_transaction_type_id' => 2,
-                    'coins' => $coinsToAdd, 
-                    'transaction_datetime' => now(), 
-                ]);
-            });
-
-            $newBalance = DB::table('users')->where('id', $user->id)->value('coins_balance');
-
-            return response()->json([
-                'message' => "Compra realizada!",
-                'new_balance' => $newBalance
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Erro na compra: ' . $e->getMessage()], 500);
-        }
+        return response()->json([
+            'message' => "Compra realizada!",
+            'new_balance' => $user->coins_balance
+        ]);
     }
 
     // --------------------------------------------------------------------
-    // ATUALIZAR PERFIL (FOTO + NOME + PASS)
+    // COMPRAR AVATAR (LÓGICA SEGURA E PERMANENTE)
+    // --------------------------------------------------------------------
+    public function buyAvatar(Request $request)
+    {
+        $request->validate([
+            'seed' => 'required|string',
+            'price' => 'required|integer|min:0'
+        ]);
+
+        $user = $request->user();
+
+        // Lista de avatares padrão
+        $defaultAvatars = ['Felix', 'Aneka', 'Zack', 'Midnight', 'Bear'];
+
+        // Obtém os avatares que o user já tem na BD
+        $myAvatars = $user->unlocked_avatars ?? [];
+
+        // Se estiver vazia ou null, assume os defaults
+        if (empty($myAvatars)) {
+            $myAvatars = $defaultAvatars;
+        }
+
+        // 1. Verificar se já tem o avatar
+        if (in_array($request->seed, $myAvatars)) {
+            return response()->json(['message' => 'Já tens este avatar!'], 422);
+        }
+
+        // 2. Verificar Saldo
+        if ($user->coins_balance < $request->price) {
+            return response()->json(['message' => 'Saldo insuficiente.'], 422);
+        }
+
+        // 3. Registar a Transação
+        $user->transactions()->create([
+            'type' => 'P',
+            'value' => -$request->price,
+            'description' => 'Bought avatar: ' . $request->seed,
+            'date' => now(),
+        ]);
+
+        // 4. Atualizar User (Saldo e Array)
+        $user->coins_balance -= $request->price;
+        
+        $myAvatars[] = $request->seed; // Adiciona o novo à lista PHP
+        $user->unlocked_avatars = $myAvatars; // Guarda a lista atualizada no Model
+        
+        $user->save(); 
+
+        return response()->json([
+            'message' => 'Avatar comprado com sucesso!',
+            'user' => $user 
+        ]);
+    }
+
+    // --------------------------------------------------------------------
+    // ATUALIZAR PERFIL
     // --------------------------------------------------------------------
     public function update(Request $request, User $user)
     {
-        // 1. Validar tudo (nome, password e ficheiro)
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'nickname' => 'nullable|string|max:20',
             'password' => 'nullable|string|min:3',
-            'file' => 'nullable|image|max:4096', // Valida se é imagem e tamanho máx 4MB
+            'file' => 'nullable|image|max:4096',
+            'custom_avatar_seed' => 'sometimes|string',
+            'unlocked_avatars' => 'sometimes|array'
         ]);
 
-        // 2. Atualizar Nome
-        $user->name = $validated['name'];
+        // Atualizar Campos Simples
+        if ($request->has('nickname')) {
+            $user->nickname = $validated['nickname'];
+        }
 
-        // 3. Atualizar Password (apenas se foi enviada)
+        if ($request->has('custom_avatar_seed')) {
+            $user->custom_avatar_seed = $request->input('custom_avatar_seed');
+        }
+
+   
+        if ($request->has('unlocked_avatars')) {
+            $user->unlocked_avatars = $request->input('unlocked_avatars');
+        }
+        // --------------------------------
+
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
         }
 
-        // 4. Lógica da Imagem
+        // Atualizar Foto
         if ($request->hasFile('file')) {
-            
-            // A. Apagar a foto antiga se existir 
             if ($user->photo_avatar_filename && Storage::disk('public')->exists('photos_avatars/' . $user->photo_avatar_filename)) {
                 Storage::disk('public')->delete('photos_avatars/' . $user->photo_avatar_filename);
             }
-
-            // B. Guardar a nova foto na pasta 'storage/app/public/photos_avatars'
             $path = $request->file('file')->store('photos_avatars', 'public');
-
-            // C. Guardar apenas o nome do ficheiro na BD (ex: 'hash.jpg')
             $user->photo_avatar_filename = basename($path);
         }
 
         $user->save();
 
-        // Retornar o user atualizado para o Vue atualizar a store
         return response()->json([
             'message' => 'Profile updated successfully!',
             'data' => $user

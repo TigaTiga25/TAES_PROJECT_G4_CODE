@@ -21,7 +21,7 @@
             <Input
               v-model="email"
               type="email"
-              placeholder="o.teu@email.com"
+              placeholder="your@email.com"
               class="w-full"
             />
             <p v-if="validationErrors?.email" class="text-sm text-red-600 mt-1">
@@ -31,12 +31,12 @@
 
           <div class="space-y-1">
             <label class="block text-sm font-medium text-slate-700">
-              Nickname
+              Name
             </label>
             <Input
               v-model="nickname"
               type="text"
-              placeholder="O teu nickname"
+              placeholder="Your name"
               class="w-full"
             />
             <p v-if="validationErrors?.name" class="text-sm text-red-600 mt-1">
@@ -51,7 +51,7 @@
             <Input
               v-model="password"
               type="password"
-              placeholder="A tua password"
+              placeholder="Your password"
               class="w-full"
             />
             <p v-if="validationErrors?.password" class="text-sm text-red-600 mt-1">

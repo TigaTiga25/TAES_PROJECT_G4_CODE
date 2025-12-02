@@ -24,28 +24,29 @@ import { Badge } from '@/components/ui/badge'
 // --- Logic ---
 const router = useRouter()
 const route = useRoute()
-const API_URL = 'http://localhost:8000' // Tem de ser igual ao do Profile
+// O API_URL já não é estritamente necessário aqui se não carregarmos fotos reais, 
+// mas podes deixar ficar.
+const API_URL = 'http://localhost:8000' 
 
-// Variável para controlar o Modal de Zoom do Avatar
 const showAvatarModal = ref(false)
 
-// Define se a navbar é visível
 const showNavbar = computed(() => {
   const hiddenRoutes = ['/', '/login', '/register', '/gameBoard/'];
   return !hiddenRoutes.some(r => route.path === r || route.path.startsWith('/gameBoard/'));
 });
 
-
+// --- MUDANÇA AQUI: Lógica simplificada ---
 const avatarUrl = computed(() => {
   const u = userStore.user
   
-  // 1. Imagem Real: Verifica o campo correto 'photo_avatar_filename' na BD
-  if (u && u.photo_avatar_filename) {
-    return `${API_URL}/storage/photos_avatars/${u.photo_avatar_filename}`
-  }
+  // ANTES: Verificava se tinha foto real...
+  // AGORA: Ignoramos a foto real na navbar. Queremos sempre o boneco.
 
-  // 2. DiceBear Fallback (Se não houver foto, gera boneco)
-  const seed = u?.name || 'Player'
+  // 1. Tenta usar a seed personalizada (do passo anterior)
+  // 2. Se não tiver, usa o nome do utilizador
+  // 3. Fallback para 'Player'
+  const seed = u?.custom_avatar_seed || u?.name || 'Player'
+  
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`
 })
 
@@ -68,37 +69,35 @@ function handleLogout() {
   <nav v-if="showNavbar" class="border-b bg-white/90 backdrop-blur-sm sticky top-0 z-50">
     <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
 
-      <!-- Logo -->
       <div class="flex items-center gap-3 cursor-pointer" @click="goHome">
         <span class="text-xl font-bold">BISCA</span>
         <span class="text-sm text-slate-600">Single Player</span>
       </div>
 
-      <!-- Menu Central -->
       <NavigationMenu class="hidden md:flex">
         <NavigationMenuList>
-          <NavigationMenuItem>
+          
+          <NavigationMenuItem v-if="userStore.isLoggedIn">
             <RouterLink to="/customizations" class="nav-link">Customizations</RouterLink>
           </NavigationMenuItem>
 
-          <NavigationMenuItem>
+          <NavigationMenuItem v-if="userStore.isLoggedIn">
             <RouterLink to="/history" class="nav-link">Game History</RouterLink>
           </NavigationMenuItem>
           
-          <NavigationMenuItem>
+          <NavigationMenuItem v-if="userStore.isLoggedIn">
             <RouterLink to="/scoreboards" class="nav-link">Scoreboards</RouterLink>
           </NavigationMenuItem>
 
           <NavigationMenuItem>
             <RouterLink to="/about" class="nav-link">About</RouterLink>
           </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
 
-      <!-- Lado Direito (Login / User) -->
+        </NavigationMenuList>
+       </NavigationMenu>
+
       <div class="flex items-center gap-4">
         
-        <!-- Se NÃO estiver logado -->
         <NavigationMenu v-if="!userStore.isLoggedIn">
           <NavigationMenuList>
             <NavigationMenuItem>
@@ -107,9 +106,7 @@ function handleLogout() {
           </NavigationMenuList>
         </NavigationMenu>
         
-        <!-- Se ESTIVER logado -->
         <template v-else>
-            <!-- Badge Moedas -->
             <Badge 
               variant="secondary" 
               class="px-3 py-1 text-sm cursor-pointer hover:bg-slate-200 transition select-none"
@@ -118,7 +115,6 @@ function handleLogout() {
               🪙 {{ userStore.user?.coins_balance || 0 }}
             </Badge>
 
-            <!-- Dropdown User -->
             <DropdownMenu>
               <DropdownMenuTrigger class="focus:outline-none flex items-center gap-3 group">
                 
@@ -129,8 +125,7 @@ function handleLogout() {
                 <Avatar 
                     class="cursor-pointer bg-slate-100 group-hover:ring-2 group-hover:ring-slate-200 transition"
                 >
-                  <!-- Aqui usamos o avatarUrl correto -->
-                  <AvatarImage  :src="avatarUrl" class="object-cover" />
+                  <AvatarImage :src="avatarUrl" class="object-cover" />
                   <AvatarFallback class="bg-slate-200 text-slate-700 font-bold">
                     {{ initials }}
                   </AvatarFallback>
@@ -160,7 +155,6 @@ function handleLogout() {
     </div>
   </nav>
 
-  <!-- Avatar Modal (Zoom) -->
   <div v-if="showAvatarModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200" @click="showAvatarModal = false">
     
     <div class="bg-white p-2 rounded-xl shadow-2xl max-w-sm w-full relative" @click.stop>
