@@ -1,17 +1,40 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { userStore } from '@/stores/userStore.js'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
-// Inicializamos como array vazio para evitar o erro de "undefined length"
 const transactions = ref([]) 
 const isLoading = ref(true)
 const showBuyModal = ref(false)
 const isProcessing = ref(false)
 
-// 1. PACOTES CORRETOS
+// --- LÓGICA DE PAGINAÇÃO ---
+const currentPage = ref(1)
+const itemsPerPage = ref(5) // 5 itens por página
+
+const totalPages = computed(() => {
+    // Evita divisão por zero ou páginas negativas se o array estiver vazio
+    const total = Math.ceil(transactions.value.length / itemsPerPage.value)
+    return total > 0 ? total : 1
+})
+
+const paginatedTransactions = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage.value
+    const end = start + itemsPerPage.value
+    return transactions.value.slice(start, end)
+})
+
+const nextPage = () => {
+    if (currentPage.value < totalPages.value) currentPage.value++
+}
+
+const prevPage = () => {
+    if (currentPage.value > 1) currentPage.value--
+}
+// ---------------------------
+
 const coinPackages = [
     { coins: 10, price: 1, label: 'Pacote Básico', icon: '💰' },
     { coins: 20, price: 2, label: 'Pacote Duplo', icon: '🪙' },
@@ -19,14 +42,12 @@ const coinPackages = [
     { coins: 100, price: 10, label: 'Baú de Tesouro', icon: '👑' }
 ]
 
-// 2. FUNÇÃO DE COMPRA (Corrigida a rota para incluir /api)
 const buyPackage = async (pkg) => {
     if (!confirm(`Queres comprar ${pkg.coins} moedas por ${pkg.price}€?`)) return;
 
     isProcessing.value = true;
 
     try {
-        // CORREÇÃO: Adicionado '/api' antes da rota
         const response = await axios.post('/api/users/buy-coins', {
             amount: pkg.coins,
             cost: pkg.price,
@@ -37,8 +58,6 @@ const buyPackage = async (pkg) => {
         showBuyModal.value = false
         
         alert('Compra realizada com sucesso!')
-        
-        // Atualiza a lista após a compra
         await fetchTransactions()
 
     } catch (error) {
@@ -49,18 +68,15 @@ const buyPackage = async (pkg) => {
     }
 }
 
-// 3. BUSCAR HISTÓRICO 
 const fetchTransactions = async () => {
     isLoading.value = true
     try {
-        // CORREÇÃO: Adicionado '/api' antes da rota
         const response = await axios.get('/api/users/transactions')
-        
-        // CORREÇÃO: Garante que é sempre um array, mesmo se vier null
         transactions.value = response.data.data || [] 
+        currentPage.value = 1 
     } catch (error) {
         console.error("Erro ao buscar transações:", error)
-        transactions.value = [] // Em caso de erro, define como array vazio para não quebrar a página
+        transactions.value = [] 
     } finally {
         isLoading.value = false
     }
@@ -118,29 +134,63 @@ onMounted(fetchTransactions)
                     <span>No transactions found.</span>
                 </div>
 
-                <table v-else class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-slate-500 font-medium">
-                        <tr>
-                            <th class="px-6 py-3">Date</th>
-                            <th class="px-6 py-3">Description</th>
-                            <th class="px-6 py-3 text-right">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-100">
-                        <tr v-for="t in transactions" :key="t.id" class="hover:bg-slate-50 transition group">
-                            <td class="px-6 py-4 text-slate-500 text-xs">
-                                {{ new Date(t.date).toLocaleString('en-GB') }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="font-medium text-slate-700">{{ t.type_name }}</span>
-                            </td>
-                            <td class="px-6 py-4 text-right font-bold font-mono text-base"
-                                :class="t.amount > 0 ? 'text-emerald-600' : 'text-red-500'">
-                                {{ t.amount > 0 ? '+' : '' }}{{ t.amount }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div v-else>
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-medium">
+                            <tr>
+                                <th class="px-6 py-3">Date</th>
+                                <th class="px-6 py-3">Description</th>
+                                <th class="px-6 py-3 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr v-for="t in paginatedTransactions" :key="t.id" class="hover:bg-slate-50 transition group">
+                                <td class="px-6 py-4 text-slate-500 text-xs">
+                                    {{ new Date(t.date).toLocaleString('en-GB') }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="font-medium text-slate-700">{{ t.description }}</span>
+                                </td>
+                                <td 
+                                    class="px-6 py-4 text-right font-bold font-mono text-base"
+                                    :class="t.value > 0 ? 'text-emerald-600' : 'text-red-500'"
+                                    >
+                                    {{ t.value > 0 ? '+' : '' }}{{ t.value }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="px-6 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                        <span class="text-xs text-slate-500 font-medium">
+                            Page {{ currentPage }} of {{ totalPages }}
+                        </span>
+                        
+                        <div class="flex gap-2">
+                            <button 
+                                @click="prevPage" 
+                                :disabled="currentPage === 1"
+                                class="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 transition-all active:scale-95"
+                                title="Previous Page"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m15 18-6-6 6-6"/>
+                                </svg>
+                            </button>
+
+                            <button 
+                                @click="nextPage" 
+                                :disabled="currentPage === totalPages"
+                                class="p-2 bg-white border border-slate-200 rounded-lg shadow-sm hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-slate-600 transition-all active:scale-95"
+                                title="Next Page"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m9 18 6-6-6-6"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <Transition name="fade">
@@ -148,7 +198,6 @@ onMounted(fetchTransactions)
                     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" @click="showBuyModal = false"></div>
 
                     <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all">
-                        
                         <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
                             <h2 class="text-lg font-bold text-slate-800">Coin Store</h2>
                             <button @click="showBuyModal = false" class="text-slate-400 hover:text-slate-600 transition">
@@ -177,14 +226,12 @@ onMounted(fetchTransactions)
                                 </div>
                             </div>
                         </div>
-
                         <div class="bg-slate-50 px-6 py-3 text-center border-t border-slate-100">
                             <p class="text-xs text-slate-400">Secure Payment (Academic Simulation)</p>
                         </div>
                     </div>
                 </div>
             </Transition>
-
         </div>
     </div>
 </template>

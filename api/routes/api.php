@@ -10,6 +10,7 @@ use App\Http\Controllers\ScoreboardController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
+use App\Http\Controllers\TransactionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -77,4 +78,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- GAMES (Jogos individuais dentro da partida) ---
     Route::post('/matches/{match_id}/game', [GameController::class, 'create']);
     Route::put('/games/{game_id}/finishGame', [GameController::class, 'finishGame']); // Terminar um jogo parcial (mão)
+
+    // --- TRANSACTIONS (Transações de Moedas) ---
+    Route::post('/transactions', [TransactionController::class, 'store']);
+
+    Route::post('/avatars/buy', [App\Http\Controllers\UserController::class, 'buyAvatar']);
+    
 });

@@ -9,47 +9,46 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-
-// Avatar Components
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const router = useRouter()
 const fileInputRef = ref(null) 
 
-// Form data
+const API_URL = 'http://localhost:8000'
+
+// ---------------------------------------------------------
+// 1. CONFIGURAÇÃO DO FORMULÁRIO
+// ---------------------------------------------------------
 const form = ref({
-  name: userStore.user?.name || '',
+  // Campos BLOQUEADOS (Apenas leitura)
+  name: userStore.user?.name || '', 
+  email: userStore.user?.email || '',
+  
+  // Campos EDITÁVEIS
+  nickname: userStore.user?.nickname || '', 
   password: ""
 })
 
-// Upload variables
+
+// ---------------------------------------------------------
+// 2. LÓGICA DA FOTO (FOTO REAL)
+// ---------------------------------------------------------
 const selectedFile = ref(null)
 const previewImage = ref(null)
 
-// Define a tua API URL
-const API_URL = 'http://localhost:8000'
-
-// Lógica de visualização da imagem
-const displayImage = computed(() => {
-    // 1. Prioridade: Preview local (se o user acabou de escolher um ficheiro)
+const displayProfilePhoto = computed(() => {
     if (previewImage.value) return previewImage.value
-    
-    // 2. Prioridade: Foto da base de dados
     if (userStore.user?.photo_avatar_filename) {
         return `${API_URL}/storage/photos_avatars/${userStore.user.photo_avatar_filename}`
     }
-
-    // 3. Fallback: Null (o componente Avatar trata disto sozinho e mostra as iniciais)
     return null
 })
 
-// Iniciais do nome para o Fallback (ex: "João Silva" -> "J")
 const userInitials = computed(() => {
-    const name = form.value.name || userStore.user?.name || '?'
+    const name = form.value.name || '?'
     return name.charAt(0).toUpperCase()
 })
 
-// Quando o user escolhe um ficheiro
 function onFileChange(event) {
     const file = event.target.files[0]
     if (!file) return
@@ -57,57 +56,52 @@ function onFileChange(event) {
     previewImage.value = URL.createObjectURL(file)
 }
 
-// Clicar no botão aciona o input escondido
 function triggerFileInput() {
     fileInputRef.value.click()
 }
 
-// Guardar perfil e enviar ficheiro
+// ---------------------------------------------------------
+// 3. SALVAR (UPDATE)
+// ---------------------------------------------------------
 async function saveProfile() {
     if (!userStore.user?.id) return
 
     try {
         const formData = new FormData()
-        
-        // Método spoofing para Laravel (PUT via POST) para aceitar ficheiros
         formData.append('_method', 'PUT')
         
-        formData.append('name', form.value.name)
+        // ENVIA APENAS O QUE É EDITÁVEL
         
+        // 1. Player Name
+        formData.append('nickname', form.value.nickname)
+
+        // 2. Senha (se preenchida)
         if (form.value.password) {
             formData.append('password', form.value.password)
         }
         
-        // IMPORTANTE: O nome 'file' tem de bater certo com o Controller do Laravel
+        // 3. Foto Real (se selecionada)
         if (selectedFile.value) {
             formData.append('file', selectedFile.value) 
         }
 
+        // Nota: NÃO enviamos 'name' nem 'email' pois são bloqueados.
+
         const response = await axios.post(
             `${API_URL}/api/users/${userStore.user.id}`, 
             formData, 
-            {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            }
+            { headers: { 'Content-Type': 'multipart/form-data' } }
         )
 
-        // Atualizar a Store com os dados novos 
         userStore.login(userStore.token, response.data.data)
-        
         alert("Profile updated successfully!")
         
-        // Limpezas
         selectedFile.value = null
-        previewImage.value = null // Limpa o preview para assumir a nova foto da BD
         form.value.password = ""
 
     } catch (error) {
         console.error(error)
-        if (error.response?.status === 422) {
-             alert("Validation Error: " + JSON.stringify(error.response.data.errors))
-        } else {
-             alert("Error updating profile.")
-        }
+        alert("Error updating profile: " + (error.response?.data?.message || error.message))
     }
 }
 
@@ -117,30 +111,21 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-xl mx-auto p-6 space-y-8">
-    <h1 class="text-3xl font-bold">Profile</h1>
+  <div class="max-w-2xl mx-auto p-6 space-y-8">
+    <h1 class="text-3xl font-bold">Account Settings</h1>
 
     <Card>
       <CardHeader>
-        <CardTitle>Edit Profile</CardTitle>
-        <CardDescription>Change your photo and name.</CardDescription>
+        <CardTitle>Personal Details</CardTitle>
+        <CardDescription>Manage your personal information.</CardDescription>
       </CardHeader>
 
-      <CardContent class="space-y-6">
+      <CardContent class="space-y-8">
         
-        <div class="flex items-center gap-6">
-            
-            <!-- Componente Avatar -->
-            <Avatar class="w-24 h-24 border-2 border-emerald-100 shadow-md">
-                <!-- Imagem (só aparece se displayImage for válido) -->
-                <AvatarImage 
-                    
-                    :src="displayImage" 
-                    class="object-cover" 
-                    alt="User Photo" 
-                />
-                <!-- Fallback (aparece se não houver imagem) -->
-                <AvatarFallback class="bg-emerald-600 text-white text-3xl font-bold">
+        <div class="flex items-center gap-6 pb-6 border-b border-slate-100">
+            <Avatar class="w-20 h-20 border-2 border-slate-200">
+                <AvatarImage :src="displayProfilePhoto" class="object-cover" />
+                <AvatarFallback class="bg-slate-800 text-white text-xl">
                     {{ userInitials }}
                 </AvatarFallback>
             </Avatar>
@@ -148,37 +133,59 @@ onMounted(() => {
             <div class="space-y-2">
                 <Label>Profile Photo</Label>
                 <div class="flex gap-2">
-                    <Button variant="outline" size="sm" @click="triggerFileInput">
-                        Choose File
+                    <Button variant="secondary" size="sm" @click="triggerFileInput">
+                        Change Photo
                     </Button>
-                    <input 
-                        ref="fileInputRef"
-                        type="file" 
-                        class="hidden" 
-                        accept="image/jpeg,image/png,image/jpg"
-                        @change="onFileChange"
-                    />
+                    <input ref="fileInputRef" type="file" class="hidden" accept="image/*" @change="onFileChange" />
                 </div>
-                <p class="text-xs text-slate-500">
-                    Max 4MB (JPG/PNG).
-                </p>
             </div>
         </div>
 
-        <div class="space-y-2">
-          <Label>Player Name</Label>
-          <Input v-model="form.name" placeholder="Your name" />
-        </div>
+        <div class="grid gap-5">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <Label>Name</Label>
+                    <Input 
+                        v-model="form.name" 
+                        disabled 
+                        class="bg-slate-50 text-slate-500 cursor-not-allowed" 
+                    />
+                </div>
 
-        <div class="space-y-2 pt-4 border-t">
-          <Label>New Password (Optional)</Label>
-          <Input type="password" v-model="form.password" />
+                <div class="space-y-2">
+                    <Label class="text-indigo-600 font-semibold">Player Name</Label>
+                    <Input 
+                        v-model="form.nickname" 
+                        placeholder="Enter your gamer tag" 
+                        class="border-indigo-200 focus-visible:ring-indigo-500"
+                    />
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <Label>Email</Label>
+                <Input 
+                    v-model="form.email" 
+                    disabled 
+                    class="bg-slate-50 text-slate-500 cursor-not-allowed" 
+                />
+            </div>
+
+            <div class="space-y-2 pt-2">
+                <Label>New Password (Optional)</Label>
+                <Input 
+                    type="password" 
+                    v-model="form.password" 
+                    placeholder="Leave empty to keep current password"
+                    autocomplete="new-password" 
+                />
+            </div>
         </div>
 
       </CardContent>
 
-      <CardFooter class="flex justify-between">
-        <Button variant="ghost" @click="router.push('/home')">Cancel</Button>
+      <CardFooter class="bg-slate-50/50 p-6 flex justify-end">
         <Button @click="saveProfile">Save Changes</Button>
       </CardFooter>
     </Card>
