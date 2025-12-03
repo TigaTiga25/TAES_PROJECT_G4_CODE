@@ -129,6 +129,10 @@ import axios from 'axios'
 
 const router = useRouter()
 const props = defineProps({
+  type: {
+    type: Number,
+    required: true,
+  },
   id: {
     type: Number,
     required: true,
@@ -308,10 +312,10 @@ function startGame() {
   const newDeck = fullDeck;
   const shuffled = newDeck.sort(() => Math.random() - 0.5)
 
-  playerCards.value = shuffled.slice(0, 9)
-  botCards.value = shuffled.slice(9, 18)
+  playerCards.value = shuffled.slice(0, props.type)
+  botCards.value = shuffled.slice(props.type, props.type * 2)
   trumpCard.value = shuffled[39]
-  deck.value = shuffled.slice(18, 39)
+  deck.value = shuffled.slice(props.type * 2, 39)
 
   iniciateTrick.value = Math.random() < 0.5 ? 'p' : 'b'
 
@@ -505,7 +509,7 @@ function restartGame() {
 
 async function continueMatch() {
   const response = await axios.post(`/api/matches/${matchId.value}/game`)
-  router.push(`/gameBoard/${response.data.data.id}`)
+  router.push(`/gameBoard/${props.type}/${response.data.data.id}`)
   startGame()
 }
 

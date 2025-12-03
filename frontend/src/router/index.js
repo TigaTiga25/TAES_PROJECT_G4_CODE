@@ -55,10 +55,13 @@ const routes = [
     meta: { requiresAuth: true } 
   },
   {
-    path: '/gameBoard/:id',
+    path: '/gameBoard/:type/:id',
     name: 'GameBoard',
     component: GameBoard,
-    props: route => ({ id: parseInt(route.params.id) }),
+    props: route => ({ 
+      type: parseInt(route.params.type), 
+      id: parseInt(route.params.id) 
+    }),
     meta: { requiresAuth: true } 
   },
   {
