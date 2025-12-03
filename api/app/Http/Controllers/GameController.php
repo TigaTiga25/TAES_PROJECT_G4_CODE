@@ -35,7 +35,8 @@ class GameController extends Controller
         return response()->json([
             'status' => 201,
             'message' => 'Jogo criado com sucesso',
-            'data' => $game
+            'data' => $game,
+            'typeOfBisca' => $match->type
         ]);
     }
 
