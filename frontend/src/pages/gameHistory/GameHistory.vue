@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-emerald-10 to-emerald-100 flex flex-col font-sans select-none">
+  <div class="min-h-screen flex flex-col font-sans select-none">
     <div class="flex flex-col justify-center items-center gap-5 mt-10 p-4">
         <h1 class="text-4xl font-black text-emerald-900 mb-3 tracking-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
           Game History
@@ -9,15 +9,72 @@
           Log in to see your game history.
         </div>
 
-        <div v-else-if="matches.length === 0" class="mt-10 text-center text-lg text-gray-500">
-          No matches found.
-        </div>
+        <div v-else class="w-full max-w-4xl">
+          <div class="bg-white rounded-lg p-4 mb-6 shadow-md border border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Filters</h2>
 
-        <Card v-for="match in matches" @click="toggleMatch(match.id)" class="w-full max-w-4xl rounded-lg relative hover:scale-105 transition-transform duration-300 ease-in-out" :class="{
-                'bg-radial from-blue-400 to-blue-500': match.player1_marks > match.player2_marks,
-                'bg-radial from-red-400 to-rose-500': match.player1_marks <= match.player2_marks,
-                'mb-6': isExpanded(match.id),
-                'mt-6': isExpanded(match.id)}">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="flex flex-col">
+                <label class="text-sm font-medium text-gray-700 mb-2">From Date</label>
+                <input
+                  v-model="filterDateFrom"
+                  type="date"
+                  class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div class="flex flex-col">
+                <label class="text-sm font-medium text-gray-700 mb-2">To Date</label>
+                <input
+                  v-model="filterDateTo"
+                  type="date"
+                  class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div class="flex flex-col">
+                <label class="text-sm font-medium text-gray-700 mb-2">Result</label>
+                <select
+                  v-model="filterResult"
+                  class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">All Results</option>
+                  <option value="win">Win</option>
+                  <option value="loss">Loss</option>
+                </select>
+              </div>
+
+              <div class="flex flex-col">
+                <label class="text-sm font-medium text-gray-700 mb-2">Achievement</label>
+                <select
+                  v-model="filterAchievement"
+                  class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                  <option value="">All</option>
+                  <option value="capote">Capote</option>
+                  <option value="bandeira">Bandeira</option>
+                  <option value="either">Capote/Bandeira</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              @click="clearFilters"
+              class="mt-4 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              Clear Filters
+            </button>
+          </div>
+
+          <div v-if="curatedMatches.length === 0" class="mt-10 text-center text-lg text-gray-500">
+            No matches found.
+          </div>
+
+            <Card v-for="match in curatedMatches" @click="toggleMatch(match.id)" class="w-full max-w-4xl rounded-lg relative mb-4 hover:scale-105 transition-transform duration-300 ease-in-out" :class="{
+                  'bg-radial from-blue-400 to-blue-500': match.player1_marks > match.player2_marks,
+                  'bg-radial from-red-400 to-rose-500': match.player1_marks <= match.player2_marks,
+                  'mb-8': isExpanded(match.id),
+                  'mt-8': isExpanded(match.id)}">
             <CardHeader>
               <CardTitle class="text-xl font-semibold text-gray-900">
                 <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-6">
@@ -83,13 +140,14 @@
               </div>
             </CardHeader>
         </Card>
+        </div>
     </div>
   </div>
 </template>
 
 <script setup>
 
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { userStore } from '@/stores/userStore.js'
 import axios from 'axios'
@@ -103,6 +161,10 @@ import {
 
 const matches = ref([])
 const games = ref([])
+const filterDateFrom = ref('')
+const filterDateTo = ref('')
+const filterResult = ref('')
+const filterAchievement = ref('')
 
 onMounted(() => {
   getMatches()
@@ -193,5 +255,106 @@ const getAccumulatedScore = (gamesArr, currentIndex) => {
     }
   }
   return `${p1Marks} - ${p2Marks}`;
+}
+
+const isWin = (match) => {
+  return match.player1_marks > match.player2_marks;
+}
+
+const matchHasCapote = (match) => {
+  const games = gamesByMatch(match.id) || [];
+  return games.some(game => {
+    const p1 = game.player1_points ?? 0;
+    const p2 = game.player2_points ?? 0;
+
+    return (p1 > p2 && p1 >= 91 && p1 <= 119) || (p2 > p1 && p2 >= 91 && p2 <= 119);
+  });
+}
+
+const matchHasBandeira = (match) => {
+  const games = gamesByMatch(match.id) || [];
+  return games.some(game => {
+    const p1 = game.player1_points ?? 0;
+    const p2 = game.player2_points ?? 0;
+
+    return (p1 > p2 && p1 === 120) || (p2 > p1 && p2 === 120);
+  });
+}
+
+
+const matchesDateFilter = computed(() => {
+  return matches.value.filter(match => {
+    if (!filterDateFrom.value && !filterDateTo.value) {
+      return true;
+    }
+
+    const matchDate = new Date(match.ended_at);
+    const matchDateOnly = new Date(matchDate.getFullYear(), matchDate.getMonth(), matchDate.getDate());
+
+    if (filterDateFrom.value) {
+      const fromDate = new Date(filterDateFrom.value);
+      if (matchDateOnly < fromDate) {
+        return false;
+      }
+    }
+
+    if (filterDateTo.value) {
+      const toDate = new Date(filterDateTo.value);
+      if (matchDateOnly > toDate) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+})
+
+const matchesResultFilter = computed(() => {
+  return matchesDateFilter.value.filter(match => {
+    if (!filterResult.value) {
+      return true;
+    }
+
+    if (filterResult.value === 'win') {
+      return isWin(match);
+    } else if (filterResult.value === 'loss') {
+      return !isWin(match);
+    }
+
+    return true;
+  });
+})
+
+const matchesAchievementFilter = computed(() => {
+  return matchesResultFilter.value.filter(match => {
+    if (!filterAchievement.value) return true;
+
+    const hasCapote = matchHasCapote(match);
+    const hasBandeira = matchHasBandeira(match);
+
+    if (filterAchievement.value === 'capote') return hasCapote && !hasBandeira;
+    if (filterAchievement.value === 'bandeira') return hasBandeira;
+    if (filterAchievement.value === 'either') return hasCapote || hasBandeira;
+
+    return true;
+  });
+})
+
+const curatedMatches = computed(() => {
+  return [...matchesAchievementFilter.value].sort((a, b) => {
+    const pa = (matchHasBandeira(a) ? 2 : (matchHasCapote(a) ? 1 : 0));
+    const pb = (matchHasBandeira(b) ? 2 : (matchHasCapote(b) ? 1 : 0));
+    if (pb !== pa) return pb - pa;
+    const dateA = new Date(a.ended_at);
+    const dateB = new Date(b.ended_at);
+    return dateB - dateA;
+  });
+})
+
+const clearFilters = () => {
+  filterDateFrom.value = '';
+  filterDateTo.value = '';
+  filterResult.value = '';
+  filterAchievement.value = '';
 }
 </script>
