@@ -64,7 +64,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // --- SCOREBOARD / ESTATÍSTICAS ---
     Route::get('/statistics/personal', [ScoreboardController::class, 'getPersonalStats']);
-
+    Route::get('/statistics/global', [ScoreboardController::class, 'getGlobalRankings']);
+ 
     // --- MATCHES (Gestão de Partidas) ---
     Route::post('/matches', [MatchController::class, 'create']);
     Route::put('/matches/{match_id}/finish', [MatchController::class, 'finishGame']); // Terminar a Partida inteira
