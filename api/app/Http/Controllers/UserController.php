@@ -159,4 +159,82 @@ class UserController extends Controller
             'data' => $user
         ]);
     }
+    // --------------------------------------------------------------------
+    // COMPRAR BARALHO (DECK)
+    // --------------------------------------------------------------------
+    public function buyDeck(Request $request)
+    {
+        $request->validate([
+            'deck' => 'required|string', // Nome do baralho (ex: 'retro')
+            'price' => 'required|integer|min:0'
+        ]);
+
+        $user = $request->user();
+        
+        // Garante que a lista não é null
+        $myDecks = $user->unlocked_decks ?? [];
+        
+        // O baralho 'default' todos têm, se a lista tiver vazia, adiciona-o
+        if (empty($myDecks)) {
+            $myDecks[] = 'default';
+        }
+
+        // 1. Verificar se já tem o baralho
+        if (in_array($request->deck, $myDecks)) {
+            return response()->json(['message' => 'Já tens este baralho!'], 422);
+        }
+
+        // 2. Verificar Saldo
+        if ($user->coins_balance < $request->price) {
+            return response()->json(['message' => 'Saldo insuficiente.'], 422);
+        }
+
+        // 3. Registar a Transação
+        $user->transactions()->create([
+            'type' => 'P', // Purchase
+            'value' => -$request->price,
+            'description' => 'Bought deck: ' . $request->deck,
+            'date' => now(),
+        ]);
+
+        // 4. Atualizar User (Saldo e Lista de Decks)
+        $user->coins_balance -= $request->price;
+        
+        $myDecks[] = $request->deck; // Adiciona o novo
+        $user->unlocked_decks = $myDecks; // Guarda
+        
+        $user->save(); 
+
+        return response()->json([
+            'message' => 'Baralho comprado com sucesso!',
+            'user' => $user 
+        ]);
+    }
+
+    // --------------------------------------------------------------------
+    // EQUIPAR BARALHO (CHANGE DECK)
+    // --------------------------------------------------------------------
+    public function updateDeck(Request $request)
+    {
+        $request->validate([
+            'deck' => 'required|string',
+        ]);
+
+        $user = $request->user();
+        $myDecks = $user->unlocked_decks ?? ['default'];
+
+        // Só pode equipar se tiver o baralho na lista
+        if (!in_array($request->deck, $myDecks) && $request->deck !== 'default') {
+            return response()->json(['message' => 'Não possuis este baralho.'], 403);
+        }
+
+        $user->current_deck = $request->deck;
+        $user->save();
+
+        return response()->json([
+            'message' => 'Baralho equipado!',
+            'current_deck' => $user->current_deck,
+            'user' => $user
+        ]);
+    }
 }
