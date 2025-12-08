@@ -111,6 +111,11 @@ const handleLogin = async () => {
 
     // 4. Chamar a store 
    userStore.login(response.data.token, response.data.user)
+
+    // Isto garante que o jogo sabe qual o baralho logo ao entrar
+    const myDeck = response.data.user.current_deck || 'default';
+    localStorage.setItem('userDeck', myDeck);
+   
     
     // 5. Redirecionar para a página principal
     router.push('/home');

@@ -84,5 +84,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/transactions', [TransactionController::class, 'store']);
 
     Route::post('/avatars/buy', [App\Http\Controllers\UserController::class, 'buyAvatar']);
+
+    Route::post('/users/buy-deck', [UserController::class, 'buyDeck']);
+    Route::patch('/users/update-deck', [UserController::class, 'updateDeck']);
     
 });

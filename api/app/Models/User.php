@@ -22,6 +22,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'coins_balance',
         'custom_avatar_seed',
         'unlocked_avatars', 
+        'unlocked_decks',
+        'current_deck',
     ];
 
     protected $hidden = [
@@ -35,6 +37,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'unlocked_avatars' => 'array', //Transforma o JSON da DB em Array automaticamente
+            'unlocked_decks' => 'array',
         ];
     }
 
