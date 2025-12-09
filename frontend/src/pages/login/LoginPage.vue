@@ -39,7 +39,7 @@
               class="w-full"
             />
           </div>
-          
+
           <p v-if="errorMessage" class="text-red-600 text-sm text-center">
             {{ errorMessage }}
           </p>
@@ -97,7 +97,7 @@ const handleLogin = async () => {
     errorMessage.value = "Por favor, preencha o email e a password."
     return
   }
-  
+
   try {
     // 2. Tentar fazer o pedido ao backend
     // O URL '/api/login' é relativo (ex: http://localhost:8000/api/login)
@@ -109,22 +109,22 @@ const handleLogin = async () => {
     // 3. SUCESSO! O backend aceitou o login e enviou um token
     const token = response.data.token;
 
-    // 4. Chamar a store 
+    // 4. Chamar a store
    userStore.login(response.data.token, response.data.user)
 
     // Isto garante que o jogo sabe qual o baralho logo ao entrar
     const myDeck = response.data.user.current_deck || 'default';
     localStorage.setItem('userDeck', myDeck);
-   
-    
+
+
     // 5. Redirecionar para a página principal
     router.push('/home');
 
   } catch (error) {
     // 6. FALHA! O backend enviou um erro (ex: 401)
-    
+
     // A userStore.login() NUNCA é chamada
-    
+
     if (error.response && error.response.data && error.response.data.message) {
       // Mostra a mensagem de erro vinda do Laravel (ex: "Email ou password inválida.")
       errorMessage.value = error.response.data.message;

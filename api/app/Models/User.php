@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Notification;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -15,13 +16,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
     protected $fillable = [
         'name',
-        'nickname', 
+        'nickname',
         'email',
         'password',
         'photo_avatar_filename',
         'coins_balance',
         'custom_avatar_seed',
-        'unlocked_avatars', 
+        'unlocked_avatars',
         'unlocked_decks',
         'current_deck',
     ];
@@ -50,5 +51,10 @@ class User extends Authenticatable implements MustVerifyEmail
     public function transactions()
     {
         return $this->hasMany(\App\Models\Transaction::class);
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
     }
 }

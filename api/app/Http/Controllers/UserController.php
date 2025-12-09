@@ -25,7 +25,7 @@ class UserController extends Controller
     }
 
     // --------------------------------------------------------------------
-    // COMPRAR MOEDAS 
+    // COMPRAR MOEDAS
     // --------------------------------------------------------------------
     public function buyCoins(Request $request)
     {
@@ -35,7 +35,7 @@ class UserController extends Controller
         ]);
 
         $euros = $request->cost;
-        $coinsToAdd = $euros * 10; 
+        $coinsToAdd = $euros * 10;
         $user = $request->user();
 
         // 1. Criar Transação
@@ -99,15 +99,15 @@ class UserController extends Controller
 
         // 4. Atualizar User (Saldo e Array)
         $user->coins_balance -= $request->price;
-        
+
         $myAvatars[] = $request->seed; // Adiciona o novo à lista PHP
         $user->unlocked_avatars = $myAvatars; // Guarda a lista atualizada no Model
-        
-        $user->save(); 
+
+        $user->save();
 
         return response()->json([
             'message' => 'Avatar comprado com sucesso!',
-            'user' => $user 
+            'user' => $user
         ]);
     }
 
@@ -133,7 +133,7 @@ class UserController extends Controller
             $user->custom_avatar_seed = $request->input('custom_avatar_seed');
         }
 
-   
+
         if ($request->has('unlocked_avatars')) {
             $user->unlocked_avatars = $request->input('unlocked_avatars');
         }
@@ -170,10 +170,10 @@ class UserController extends Controller
         ]);
 
         $user = $request->user();
-        
+
         // Garante que a lista não é null
         $myDecks = $user->unlocked_decks ?? [];
-        
+
         // O baralho 'default' todos têm, se a lista tiver vazia, adiciona-o
         if (empty($myDecks)) {
             $myDecks[] = 'default';
@@ -199,15 +199,15 @@ class UserController extends Controller
 
         // 4. Atualizar User (Saldo e Lista de Decks)
         $user->coins_balance -= $request->price;
-        
+
         $myDecks[] = $request->deck; // Adiciona o novo
         $user->unlocked_decks = $myDecks; // Guarda
-        
-        $user->save(); 
+
+        $user->save();
 
         return response()->json([
             'message' => 'Baralho comprado com sucesso!',
-            'user' => $user 
+            'user' => $user
         ]);
     }
 
