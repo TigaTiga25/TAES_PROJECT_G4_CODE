@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\NotificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,7 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- SCOREBOARD / ESTATÍSTICAS ---
     Route::get('/statistics/personal', [ScoreboardController::class, 'getPersonalStats']);
     Route::get('/statistics/global', [ScoreboardController::class, 'getGlobalRankings']);
- 
+
     // --- MATCHES (Gestão de Partidas) ---
     Route::post('/matches', [MatchController::class, 'create']);
     Route::put('/matches/{match_id}/finish', [MatchController::class, 'finishGame']); // Terminar a Partida inteira
@@ -87,5 +88,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/users/buy-deck', [UserController::class, 'buyDeck']);
     Route::patch('/users/update-deck', [UserController::class, 'updateDeck']);
-    
+
+    Route::get('/notifications/unread', [NotificationController::class, 'getUnread']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    // Debug
+    Route::post('/debug/notify', [NotificationController::class, 'createMock']);
+
 });
