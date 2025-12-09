@@ -138,6 +138,7 @@ const handleLogin = async () => {
 
 // --- LOGIN ANÓNIMO ---
 const skipLogin = () => {
+  localStorage.clear();
   userStore.loginAsGuest()
   router.push('/home')
 }

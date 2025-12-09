@@ -60,7 +60,7 @@
         <h1 v-if="props.id <= 0" class="text-4xl font-bold text-white drop-shadow-md">Practice Game</h1>
         <div class="text-right text-white p-3 bg-gray-900 bg-opacity-60 rounded-lg shadow-sm border border-white/10">
             <p class="text-xs uppercase tracking-wider opacity-80">CPU</p>
-            <p class="text-3xl font-mono font-extrabold text-yellow-400">{{ botPoints }}</p>
+            <p class="text-xl font-mono font-extrabold text-yellow-400">{{ botPoints }}</p>
         </div>
     </div>
 
@@ -109,16 +109,22 @@
     </div>
 
     <div class="w-full max-w-5xl flex justify-between items-center mt-4">
-        <div class="text-left text-white p-3 bg-gray-900 bg-opacity-60 rounded-lg shadow-sm border border-white/10">
-            <p class="text-xs uppercase tracking-wider opacity-80">Player</p>
-            <button @click="testBandeira"><p class="text-2xl font-mono font-extrabold text-green-400">{{ playerPoints }}</p></button>
+      <div class="flex items-center gap-3 text-left text-white p-3 bg-gray-900 bg-opacity-60 rounded-lg shadow-sm border border-white/10"> 
+        <Avatar v-if="!userStore.isAnonymous" class="cursor-pointer bg-slate-100 group-hover:ring-2 group-hover:ring-slate-200 transition w-10 h-10">
+          <AvatarImage :src="avatarUrl" class="object-cover" />
+        </Avatar>
+        <div class="flex flex-col leading-tight">
+          <p class="text-xs uppercase tracking-wider opacity-80">{{ userStore.user.name ? userStore.user.name : "Player" }}</p>
+          <button @click="testBandeira"><p class="text-xl font-mono font-extrabold text-green-400">{{ playerPoints }}</p></button>
         </div>
+      </div>
     </div>
+
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import BotHand from './BotHand.vue'
 import PlayerHand from './PlayerHand.vue'
 import Card from './Card.vue'
@@ -126,6 +132,8 @@ import generateDeck from '@/lib/generateDeck.js'
 import { toast } from 'vue-sonner'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
+import { userStore } from '@/stores/userStore.js'
+import { Avatar, AvatarImage } from '@/components/ui/avatar'
 
 const router = useRouter()
 const props = defineProps({
@@ -539,6 +547,11 @@ async function testBandeira() {
       console.error('Erro ao finalizar jogo:', error)
     }
 }
+
+const avatarUrl = computed(() => {
+  const seed = userStore.user.custom_avatar_seed || userStore.user.name || 'Player'
+  return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`
+})
 
 startGame()
 </script>
