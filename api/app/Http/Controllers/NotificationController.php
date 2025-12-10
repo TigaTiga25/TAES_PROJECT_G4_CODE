@@ -54,23 +54,23 @@ class NotificationController extends Controller
      */
     public function createMock(Request $request)
     {
-        // Para testes: tenta pegar o user logado, senão pega o user com ID 1
         $user = $request->user() ?? User::find(1);
 
         if (!$user) {
-             return response()->json(['error' => 'Cria pelo menos um User na BD primeiro!'], 400);
+            return response()->json(['error' => 'Create a User first!'], 400);
         }
 
         $notification = Notification::create([
             'user_id' => $user->id,
-            'type'    => $request->input('type', 'LEADERBOARD'), 
-            'title'   => $request->input('title', 'Novo Líder Global!'),
-            'message' => $request->input('message', 'O jogador ' . $user->name . ' bateu o recorde!'),
+            'type'    => $request->input('type', 'LEADERBOARD'),
+            // TEXTOS EM INGLÊS:
+            'title'   => $request->input('title', 'New Global Leader!'),
+            'message' => $request->input('message', 'Player ' . $user->name . ' has broken the record!'),
             'read'    => false
         ]);
 
         return response()->json([
-            'message' => 'Notificação de teste criada!',
+            'message' => 'Test notification created!',
             'data' => $notification
         ]);
     }
