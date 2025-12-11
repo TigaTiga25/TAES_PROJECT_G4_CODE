@@ -9,16 +9,54 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScoreboardController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Auth\Events\Verified;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\NotificationController;
+
+// Rota protegida: Só Admins logados conseguem entrar
+Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+    // Rota de Admin para anunciar novidades na loja (Novo Avatar/Deck)
+    Route::post('/admin/announce-item', function (Request $request) {
+
+        // 1. Validar os dados que envias manualmente
+        $request->validate([
+            'name' => 'required|string', // Ex: "Mario Deck"
+            'type' => 'required|in:AVATAR,DECK'
+        ]);
+
+        $dbType = 'SHOP_' . $request->input('type');
+        $itemName = $request->input('name');
+        $itemType = $request->input('type');
+
+        // 2. Enviar notificação para TODOS os utilizadores
+        $users = User::all();
+        $count = 0;
+
+        foreach ($users as $user) {
+            Notification::create([
+                'user_id' => $user->id,
+                'type'    => $dbType, // Isto fará o frontend abrir a página /customizations
+                'title'   => 'New Item in Store!',
+                'message' => "A new {$itemName} is now available. Check the {$itemType} Shop!",
+                'read'    => false
+            ]);
+            $count++;
+        }
+
+        return response()->json([
+            'message' => "Anúncio enviado para {$count} utilizadores!",
+            'item' => $itemName
+        ]);
+    });
+});
 
 /*
 |--------------------------------------------------------------------------
 | Rotas Públicas (Não requerem login)
 |--------------------------------------------------------------------------
 */
-
+Route::post('/debug/notify', [NotificationController::class, 'createMock']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -91,7 +129,4 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/notifications/unread', [NotificationController::class, 'getUnread']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    // Debug
-    Route::post('/debug/notify', [NotificationController::class, 'createMock']);
-
 });

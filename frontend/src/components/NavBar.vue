@@ -24,6 +24,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 
+const notificationSound = new Audio('http://localhost:8000/notification.mp3');
+
 // --- Logic ---
 const router = useRouter()
 const route = useRoute()
@@ -66,6 +68,15 @@ const fetchNotifications = async () => {
       // Deteta se chegou algo novo para mandar o alerta do browser (System-Level)
       // Compara pelo ID ou tamanho da lista
       if (novas.length > notifications.value.length) {
+        try {
+            // --- SOM ---
+            // Reinicia o tempo para 0 (caso toque várias vezes seguidas)
+            notificationSound.currentTime = 0;
+            await notificationSound.play();
+         } catch (e) {
+            // O browser pode bloquear o som se o user ainda não tiver clicado na página
+            console.warn("Autoplay bloqueado pelo browser:", e);
+         }
          const last = novas[0]; // A mais recente
          if (Notification.permission === "granted") {
             new Notification(last.title, { body: last.message });
@@ -82,19 +93,35 @@ const fetchNotifications = async () => {
 // 2. Marcar como lida e navegar
 const handleNotificationClick = async (notif) => {
   try {
-    // Avisa o backend (Lógica do teu Controller)
     await axios.post(`/api/notifications/${notif.id}/read`);
-
-    // Remove da lista visualmente
     notifications.value = notifications.value.filter(n => n.id !== notif.id);
 
-    // Navega para o ecrã certo
-    if (notif.type === 'LEADERBOARD') router.push('/scoreboards');
-    else if (notif.type === 'CUSTOMIZATION') router.push('/customizations');
+    // --- LÓGICA DE REDIRECIONAMENTO MELHORADA ---
 
-  } catch (e) {
-    console.error(e);
-  }
+    // 1. Notificações de Baralhos
+    if (notif.type === 'SHOP_DECK') {
+        router.push({
+            path: '/customizations',
+            query: { tab: 'shop', category: 'decks' } // <--- Força a categoria Decks
+        });
+    }
+    // 2. Notificações de Avatares
+    else if (notif.type === 'SHOP_AVATAR') {
+        router.push({
+            path: '/customizations',
+            query: { tab: 'shop', category: 'avatars' } // <--- Força a categoria Avatars
+        });
+    }
+    // 3. Notificações genéricas de Customização (caso antigo)
+    else if (notif.type === 'CUSTOMIZATION') {
+        router.push({ path: '/customizations', query: { tab: 'shop' } });
+    }
+    // 4. Scoreboards
+    else if (notif.type === 'LEADERBOARD') {
+        router.push('/scoreboards');
+    }
+
+  } catch (e) { console.error(e); }
 }
 
 // 3. Iniciar o ciclo quando a Navbar aparece
@@ -105,7 +132,7 @@ onMounted(() => {
   }
 
   fetchNotifications(); // Chama já uma vez
-  pollingInterval = setInterval(fetchNotifications, 5000); // Repete a cada 5s
+  pollingInterval = setInterval(fetchNotifications, 15000); // Repete a cada 15s
 })
 
 onUnmounted(() => {

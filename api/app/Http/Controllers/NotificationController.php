@@ -54,24 +54,54 @@ class NotificationController extends Controller
      */
     public function createMock(Request $request)
     {
-        $user = $request->user() ?? User::find(1);
+        // 1. Capturar dados do pedido
+        $type    = $request->input('type', 'LEADERBOARD');
+        $title   = $request->input('title', 'New Global Leader!');
+        $message = $request->input('message', 'A player has broken the record!');
 
-        if (!$user) {
-            return response()->json(['error' => 'Create a User first!'], 400);
+        // 2. Determinar o ALVO (Target)
+        // Se o tipo for LEADERBOARD ou CUSTOMIZATION, manda para TODOS.
+        // Se for outro, manda só para o user atual (para testes simples).
+
+        if ($type === 'LEADERBOARD' || $type === 'CUSTOMIZATION' || str_starts_with($type, 'SHOP_')) {
+
+            // --- MODO GLOBAL (Broadcast) ---
+            $users = User::all();
+            $count = 0;
+
+            foreach ($users as $user) {
+                Notification::create([
+                    'user_id' => $user->id,
+                    'type'    => $type,
+                    'title'   => $title,
+                    'message' => $message,
+                    'read'    => false
+                ]);
+                $count++;
+            }
+
+            return response()->json([
+                'message' => "Global notification sent to {$count} users!",
+                'type' => $type
+            ]);
+
+        } else {
+
+            // --- MODO INDIVIDUAL (Single User) ---
+            $user = $request->user() ?? User::find(1);
+
+            $notification = Notification::create([
+                'user_id' => $user->id,
+                'type'    => $type,
+                'title'   => $title,
+                'message' => $message,
+                'read'    => false
+            ]);
+
+            return response()->json([
+                'message' => 'Personal notification created!',
+                'data' => $notification
+            ]);
         }
-
-        $notification = Notification::create([
-            'user_id' => $user->id,
-            'type'    => $request->input('type', 'LEADERBOARD'),
-            // TEXTOS EM INGLÊS:
-            'title'   => $request->input('title', 'New Global Leader!'),
-            'message' => $request->input('message', 'Player ' . $user->name . ' has broken the record!'),
-            'read'    => false
-        ]);
-
-        return response()->json([
-            'message' => 'Test notification created!',
-            'data' => $notification
-        ]);
     }
 }
