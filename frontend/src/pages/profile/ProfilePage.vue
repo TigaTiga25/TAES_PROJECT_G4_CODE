@@ -85,8 +85,6 @@ async function saveProfile() {
             formData.append('file', selectedFile.value) 
         }
 
-        // Nota: NÃO enviamos 'name' nem 'email' pois são bloqueados.
-
         const response = await axios.post(
             `${API_URL}/api/users/${userStore.user.id}`, 
             formData, 

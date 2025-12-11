@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
-// Ajusta a porta se necessário (ex: 8000 ou 8080)
 const API_URL = 'http://localhost:8000/api' 
 
 // --- ESTADOS GERAIS ---
@@ -21,7 +20,6 @@ const feedbackMessage = ref('')
 // ==========================================
 const DEFAULT_AVATARS = ['Felix', 'Aneka', 'Zack', 'Midnight', 'Bear'];
 
-// Usa ?. porque o user pode ainda não ter carregado
 const currentAvatarSeed = ref(userStore.user?.custom_avatar_seed || 'default')
 const myWardrobe = ref(userStore.user?.unlocked_avatars || [...DEFAULT_AVATARS])
 
@@ -70,7 +68,7 @@ watch(() => userStore.user, (newUser) => {
             : ['default'];
         currentDeckFolder.value = newUser.current_deck || 'default'
         
-        // Sincronizar LocalStorage (Vital para o tabuleiro de jogo ler o baralho)
+        // Sincronizar LocalStorage
         localStorage.setItem('userDeck', currentDeckFolder.value)
     }
 }, { deep: true, immediate: true })
@@ -127,7 +125,7 @@ async function saveSelection() {
             // Atualizar Store Manualmente
             if(userStore.user) userStore.user.current_deck = currentDeckFolder.value
             
-            // IMPORTANTE: Atualizar LocalStorage
+            // Atualizar LocalStorage
             localStorage.setItem('userDeck', currentDeckFolder.value)
             
             showFeedback("Deck equipped! 🃏")

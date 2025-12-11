@@ -18,12 +18,9 @@ const props = defineProps({
   }
 })
 
-// --- AQUI ESTÁ A MUDANÇA ---
-// Não importamos nada de stores. Usamos lógica simples.
 
 const imageSrc = computed(() => {
   // 1. Tenta ler da memória do browser. Se não tiver nada, usa 'default'.
-  // Isto evita teres de criar a "Store" complexa agora.
   const currentDeck = localStorage.getItem('userDeck') || 'default'
 
   // 2. Se a carta estiver escondida (ex: baralho na mesa)

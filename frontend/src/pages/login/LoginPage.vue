@@ -88,7 +88,7 @@ const loginIdentifier = ref('')
 const password = ref('')
 const errorMessage = ref(null) // Para guardar mensagens de erro
 
-// --- LOGIN NORMAL (CORRIGIDO) ---
+// --- LOGIN NORMAL ---
 const handleLogin = async () => {
   errorMessage.value = null // Limpa erros antigos
 
@@ -100,19 +100,18 @@ const handleLogin = async () => {
   
   try {
     // 2. Tentar fazer o pedido ao backend
-    // O URL '/api/login' é relativo (ex: http://localhost:8000/api/login)
     const response = await axios.post('/api/login', {
       email: loginIdentifier.value, // O backend espera um campo 'email'
       password: password.value
     });
 
-    // 3. SUCESSO! O backend aceitou o login e enviou um token
+    // O backend aceitou o login e enviou um token
     const token = response.data.token;
 
     // 4. Chamar a store 
    userStore.login(response.data.token, response.data.user)
 
-    // Isto garante que o jogo sabe qual o baralho logo ao entrar
+    // Definir o deck atual do utilizador
     const myDeck = response.data.user.current_deck || 'default';
     localStorage.setItem('userDeck', myDeck);
    
@@ -121,15 +120,13 @@ const handleLogin = async () => {
     router.push('/home');
 
   } catch (error) {
-    // 6. FALHA! O backend enviou um erro (ex: 401)
-    
-    // A userStore.login() NUNCA é chamada
+    // 6. Falhou o login
     
     if (error.response && error.response.data && error.response.data.message) {
-      // Mostra a mensagem de erro vinda do Laravel (ex: "Email ou password inválida.")
+      // Mostra a mensagem de erro vinda do Laravel
       errorMessage.value = error.response.data.message;
     } else {
-      // Erro genérico (ex: rede, servidor desligado)
+      // Erro genérico 
       errorMessage.value = "Não foi possível ligar ao servidor. Tente mais tarde."
     }
     console.error('Falha no login:', error);
