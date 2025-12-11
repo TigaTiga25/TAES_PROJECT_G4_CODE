@@ -174,6 +174,7 @@ const matchGames = ref([])
 const matchId = ref(0);
 const coinsEarned = ref(0);
 const gameResult = ref('');
+var trickByTrick = [];
 
 // --- REGRAS ---
 const cardRankOrder = ['2', '3', '4', '5', '6', '12', '11', '13', '7', '1']
@@ -251,6 +252,9 @@ function playBotCard() {
             else chosen = sortedHand[0];
         }
     }
+
+    trickByTrick.push("#------------------------#")
+    trickByTrick.push("Bot plays: " + parseToString(chosen.value) + " of " + parseToString(chosen.suit));
   }
   // ---------------------------------------------------------
   // CENÁRIO 2: BOT RESPONDE (REAÇÃO)
@@ -287,6 +291,8 @@ function playBotCard() {
             chosen = sortedHand[0];
         }
     }
+  
+    trickByTrick.push("Bot plays: " + parseToString(chosen.value) + " of " + parseToString(chosen.suit));
   }
 
   if (!chosen) chosen = sortedHand[0];
@@ -324,6 +330,17 @@ function startGame() {
   botCards.value = shuffled.slice(props.type, props.type * 2)
   trumpCard.value = shuffled[39]
   deck.value = shuffled.slice(props.type * 2, 39)
+
+  trickByTrick.push("#Deck shuffled");
+  trickByTrick.push("Trump card: " + parseToString(trumpCard.value.value) + " of " + parseToString(trumpCard.value.suit));
+  trickByTrick.push("Player cards: ");
+  for (let i = 0; i < playerCards.value.length; i++) {
+    trickByTrick.push(i + 1 + ": " + parseToString(playerCards.value[i].value) + " of " + parseToString(playerCards.value[i].suit));
+  }
+  trickByTrick.push("CPU cards: ");
+  for (let i = 0; i < botCards.value.length; i++) {
+    trickByTrick.push(i + 1 + ": " + parseToString(botCards.value[i].value) + " of " + parseToString(botCards.value[i].suit));
+  }
 
   iniciateTrick.value = Math.random() < 0.5 ? 'p' : 'b'
 
@@ -374,8 +391,15 @@ function handlePlayerPlay(card) {
   playerCards.value = playerCards.value.filter(c => c !== card)
 
   if (iniciateTrick.value === 'p') {
+
+    trickByTrick.push("#------------------------#")
+    trickByTrick.push("Player plays: " + parseToString(playedCards.value.player.value) + " of " + parseToString(playedCards.value.player.suit));
+
     setTimeout(() => playBotCard(), 500)
   } else {
+
+    trickByTrick.push("Player plays: " + parseToString(playedCards.value.player.value) + " of " + parseToString(playedCards.value.player.suit));
+
     setTimeout(() => {
       trickWinner()
       clearTable()
@@ -407,6 +431,9 @@ function trickWinner() {
     botPoints.value += points;
     iniciateTrick.value = 'b';
   }
+
+  trickByTrick.push("Trick won by: " + (winner === 'p' ? "Player" : "CPU"));
+  trickByTrick.push("Points earned: " + points);
 }
 
 async function clearTable() {
@@ -423,20 +450,35 @@ async function clearTable() {
     const gameContinues = botCards.value.length > 0;
 
     if (canDraw.value) {
+      let card;
       if (deck.value.length > 0) {
         if (iniciateTrick.value === 'p') {
-          playerCards.value.push(deck.value.pop())
-          if (deck.value.length > 0) botCards.value.push(deck.value.pop())
-          else {
+          card = deck.value.pop()
+          playerCards.value.push(card)
+          trickByTrick.push("Player draws: " + parseToString(card.value) + " of " + parseToString(card.suit));
+          if (deck.value.length > 0){
+            card = deck.value.pop() 
+            botCards.value.push(card)
+            trickByTrick.push("CPU draws: " + parseToString(card.value) + " of " + parseToString(card.suit));
+          }else {
             botCards.value.push(trumpCard.value)
+            trickByTrick.push("CPU draws: " + parseToString(trumpCard.value.value) + " of " + parseToString(trumpCard.value.suit));
             canDraw.value = false
+            trickByTrick.push("# End of deck reached #")
           }
         } else {
-          botCards.value.push(deck.value.pop())
-          if (deck.value.length > 0) playerCards.value.push(deck.value.pop())
-          else {
+          card = deck.value.pop()
+          botCards.value.push(card)
+          trickByTrick.push("CPU draws: " + parseToString(card.value) + " of " + parseToString(card.suit));
+          if (deck.value.length > 0){
+            card = deck.value.pop()
+            playerCards.value.push(card)
+            trickByTrick.push("Player draws: " + parseToString(card.value) + " of " + parseToString(card.suit));
+          }else {
             playerCards.value.push(trumpCard.value)
+            trickByTrick.push("Player draws: " + parseToString(trumpCard.value.value) + " of " + parseToString(trumpCard.value.suit));
             canDraw.value = false
+            trickByTrick.push("# End of deck reached #")
           }
         }
       } else {
@@ -444,6 +486,7 @@ async function clearTable() {
           if (iniciateTrick.value === 'p') botCards.value.push(trumpCard.value)
           else playerCards.value.push(trumpCard.value)
           canDraw.value = false
+          trickByTrick.push("# End of deck reached #")
         }
       }
       sortPlayerHand()
@@ -453,11 +496,17 @@ async function clearTable() {
 
     if (!gameContinues) {
 
+      trickByTrick.push("#---------GAME-OVER----------#")
+      trickByTrick.push("Final Score: Player " + playerPoints.value + " - CPU " + botPoints.value);
+      trickByTrick.push("Winner: " + (playerPoints.value > botPoints.value ? "Player" : (botPoints.value > playerPoints.value ? "CPU" : "DRAW")));
+
       if(props.id > 0) {
         //Not a practice game
+
         try {
           const response = await axios.put(`/api/games/${props.id}/finishGame`, {
-              player1_points: playerPoints.value
+              player1_points: playerPoints.value,
+              trickByTrick: trickByTrick
           })
 
           if(response.data.status == 201){
@@ -528,7 +577,8 @@ function quitGame() {
 async function testBandeira() {
     try {
       const response = await axios.put(`/api/games/${props.id}/finishGame`, {
-        player1_points: 120
+        player1_points: 120,
+        trickByTrick: ["Test scenario: Bandeira achieved by player"]
       })
 
           
@@ -552,6 +602,20 @@ const avatarUrl = computed(() => {
   const seed = userStore.user.custom_avatar_seed || userStore.user.name || 'Player'
   return `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`
 })
+
+function parseToString(c){
+  switch(c){
+    case 'e': return "Spades";
+    case 'o': return "Diamonds";
+    case 'p': return "Clubs";
+    case 'c': return "Hearts";
+    case '1': return "Ace";
+    case '11': return "Jack";
+    case '12': return "Queen";
+    case '13': return "King";
+    default: return c;
+  }
+}
 
 startGame()
 </script>
