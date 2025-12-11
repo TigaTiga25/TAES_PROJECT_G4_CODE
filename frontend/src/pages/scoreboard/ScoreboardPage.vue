@@ -330,15 +330,11 @@ const fetchGlobalStats = async (page = 1) => {
  
     const json = await response.json();
  
-    // Lógica para lidar com a paginação do Laravel
-    // Se o backend usar paginate(), os dados estão em json.data.data
-    // E os metadados estão na raiz do json.data
     if (json.data && json.data.data) {
         globalRankingData.value = json.data.data;
         currentPage.value = json.data.current_page;
         lastPage.value = json.data.last_page;
     } else {
-        // Fallback se não houver paginação
         globalRankingData.value = json.data || [];
         currentPage.value = 1;
         lastPage.value = 1;

@@ -64,6 +64,7 @@ class GameController extends Controller
             $game->player1_points = $p1Points;
             $game->player2_points = $p2Points;
             $game->status = 'Ended';
+            $game->custom = $request->trickByTrick;
 
             if ($p1Points > $p2Points) {
                 $game->winner_user_id = $game->player1_user_id;

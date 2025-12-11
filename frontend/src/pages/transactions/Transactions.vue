@@ -10,12 +10,10 @@ const isLoading = ref(true)
 const showBuyModal = ref(false)
 const isProcessing = ref(false)
 
-// --- LÓGICA DE PAGINAÇÃO ---
 const currentPage = ref(1)
 const itemsPerPage = ref(5) // 5 itens por página
 
 const totalPages = computed(() => {
-    // Evita divisão por zero ou páginas negativas se o array estiver vazio
     const total = Math.ceil(transactions.value.length / itemsPerPage.value)
     return total > 0 ? total : 1
 })
@@ -33,7 +31,6 @@ const nextPage = () => {
 const prevPage = () => {
     if (currentPage.value > 1) currentPage.value--
 }
-// ---------------------------
 
 const coinPackages = [
     { coins: 10, price: 1, label: 'Pacote Básico', icon: '💰' },

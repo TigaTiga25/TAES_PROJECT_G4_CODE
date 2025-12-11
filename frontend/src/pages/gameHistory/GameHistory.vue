@@ -71,76 +71,95 @@
           </div>
 
             <Card v-for="match in curatedMatches" @click="toggleMatch(match.id)" class="w-full max-w-4xl rounded-lg relative mb-4 hover:scale-105 transition-transform duration-300 ease-in-out" :class="{
-                  'bg-radial from-blue-400 to-blue-500': match.player1_marks > match.player2_marks,
-                  'bg-radial from-red-400 to-rose-500': match.player1_marks <= match.player2_marks,
-                  'mb-8': isExpanded(match.id),
-                  'mt-8': isExpanded(match.id)}">
-            <CardHeader>
-              <CardTitle class="text-xl font-semibold text-gray-900">
-                <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-6">
+                      'bg-radial from-blue-400 to-blue-500': match.player1_marks > match.player2_marks,
+                      'bg-radial from-red-400 to-rose-500': match.player1_marks <= match.player2_marks,
+                      'mb-8': isExpanded(match.id),
+                      'mt-8': isExpanded(match.id)}">
+                <CardHeader>
+                  <CardTitle class="text-xl font-semibold text-gray-900">
+                    <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-6">
 
-                  <div class="text-left">
-                    <span class="text-sm text-gray-600">{{ formatDate(match.ended_at) }}</span>
-                  </div>
-
-                  <div class="flex flex-col items-center leading-tight">
-                    <span class="text-3xl font-extrabold text-gray-800">
-                      {{ match.player1_points == null ? 0 : match.player1_points }} - {{ match.player2_points == null ? 0 : match.player2_points }}
-                    </span>
-
-                    <span class="text-sm opacity-80 text-gray-600">
-                      ({{ match.player1_marks }} - {{ match.player2_marks }})
-                    </span>
-                  </div>
-
-                  <div class="flex flex-col text-right leading-tight">
-                    <span class="truncate font-medium">
-                      {{ match.player1_name }}
-                    </span>
-
-                    <span class="text-sm opacity-70 text-gray-700">vs</span>
-
-                    <span class="truncate font-medium">
-                      {{ match.player2_name == match.player1_name ? 'CPU' : match.player2_name }}
-                    </span>
-                  </div>
-
-                </div>
-              </CardTitle>
-              <div v-show="isExpanded(match.id)" class="px-4 pb-6 pt-2 transition-all duration-300 ease-in-out">
-                <Card v-for="(game, gameNumber) in gamesByMatch(match.id)" :key="game.id" class="relative w-full mb-4 max-w-4xl mt-4 border-2 border-gray-800 rounded-lg"
-                :class="{
-                    'bg-radial from-blue-300 to-indigo-600': game.player1_points > game.player2_points,
-                    'bg-radial from-red-300 to-rose-700': game.player1_points < game.player2_points,
-                    'bg-radial from-gray-300 to-gray-500': game.player1_points === game.player2_points
-                  }">
-                    <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-4">
                       <div class="text-left">
-                        <span class="text-sm text-gray-700">{{ formatDate(game.began_at, true) }}</span>
+                        <span class="text-sm text-gray-600">{{ formatDate(match.ended_at) }}</span>
                       </div>
 
-                      <div class="flex flex-col items-center justify-center leading-tight gap-1">
-                        <span class="text-xl font-semibold whitespace-nowrap">
-                          {{ game.player1_points == null ? 0 : game.player1_points }} - {{ game.player2_points == null ? 0 : game.player2_points }}
+                      <div class="flex flex-col items-center leading-tight">
+                        <span class="text-3xl font-extrabold text-gray-800">
+                          {{ match.player1_points == null ? 0 : match.player1_points }} - {{ match.player2_points == null ? 0 : match.player2_points }}
+                        </span>
+
+                        <span class="text-sm opacity-80 text-gray-600">
+                          ({{ match.player1_marks }} - {{ match.player2_marks }})
                         </span>
                       </div>
 
                       <div class="flex flex-col text-right leading-tight">
                         <span class="truncate font-medium">
-                          {{ game.player1_name }}
+                          {{ match.player1_name }}
                         </span>
 
-                        <span class="truncate font-medium text-gray-700">
-                          {{ getAccumulatedScore(gamesByMatch(match.id), gameNumber) }}
+                        <span class="text-sm opacity-70 text-gray-700">vs</span>
+
+                        <span class="truncate font-medium">
+                          {{ match.player2_name == match.player1_name ? 'CPU' : match.player2_name }}
                         </span>
                       </div>
+
                     </div>
-                    <span class="absolute left-1/2 transform -translate-x-1/2 bottom-2 text-xs text-gray-700 opacity-75">{{ formatDuration(game.total_time) }}</span>
-                </Card>
-              </div>
-            </CardHeader>
-        </Card>
+                  </CardTitle>
+                  <div v-show="isExpanded(match.id)" class="px-4 pb-6 pt-2 transition-all duration-300 ease-in-out">
+                    <Card v-for="(game, gameNumber) in gamesByMatch(match.id)" :key="game.id" @click="openTrickByTrick(game)"
+                        class="relative w-full mb-4 max-w-4xl mt-4 border-2 border-gray-800 rounded-lg cursor-pointer hover:scale-[1.02] transition-transform"
+                        :class="{
+                          'bg-radial from-blue-300 to-indigo-600': game.player1_points > game.player2_points,
+                          'bg-radial from-red-300 to-rose-700': game.player1_points < game.player2_points,
+                          'bg-radial from-gray-300 to-gray-500': game.player1_points === game.player2_points
+                        }"
+                      >
+                        <div class="grid grid-cols-[1fr_auto_1fr] items-center w-full p-4">
+                          <div class="text-left">
+                            <span class="text-sm text-gray-700">{{ formatDate(game.began_at, true) }}</span>
+                          </div>
+
+                          <div class="flex flex-col items-center justify-center leading-tight gap-1">
+                            <span class="text-xl font-semibold whitespace-nowrap">
+                              {{ game.player1_points == null ? 0 : game.player1_points }} - {{ game.player2_points == null ? 0 : game.player2_points }}
+                            </span>
+                          </div>
+
+                          <div class="flex flex-col text-right leading-tight">
+                            <span class="truncate font-medium">
+                              {{ game.player1_name }}
+                            </span>
+
+                            <span class="truncate font-medium text-gray-700">
+                              {{ getAccumulatedScore(gamesByMatch(match.id), gameNumber) }}
+                            </span>
+                          </div>
+                        </div>
+                        <span class="absolute left-1/2 transform -translate-x-1/2 bottom-2 text-xs text-gray-700 opacity-75">{{ formatDuration(game.total_time) }}</span>
+                    </Card>
+                  </div>
+                </CardHeader>
+            </Card>
         </div>
+    </div>
+  </div>
+
+  <div v-if="showLogsModal" class="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50" @click.self="closeTrickByTrick">
+    <div class="bg-white/90 backdrop-blur-md rounded-xl shadow-xl p-6 w-96 max-h-[80vh] overflow-y-auto border-2 border-black-500">
+      <h2 class="text-xl font-semibold mb-4 text-gray-800">Trick By Trick</h2>
+
+      <ul class="list-disc pl-5 space-y-2 text-gray-700">
+        <li v-for="(line, index) in selectedGameLogs" :key="index">
+          {{ line }}
+        </li>
+      </ul>
+
+      <button class="mt-6 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 w-full"
+        @click="closeTrickByTrick">
+        Close
+      </button>
     </div>
   </div>
 </template>
@@ -165,6 +184,20 @@ const filterDateFrom = ref('')
 const filterDateTo = ref('')
 const filterResult = ref('')
 const filterAchievement = ref('')
+
+const selectedGameLogs = ref(null);
+const showLogsModal = ref(false);
+
+function openTrickByTrick(game) {
+  toggleMatch(game.match_id); 
+  selectedGameLogs.value = game.custom || [];
+  showLogsModal.value = true;
+}
+
+function closeTrickByTrick() {
+  showLogsModal.value = false;
+  selectedGameLogs.value = null;
+}
 
 onMounted(() => {
   getMatches()
