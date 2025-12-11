@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\CoinTransaction;
 use Illuminate\Support\Facades\DB;
+use App\Models\Notification;
 
 
 class GameController extends Controller
@@ -40,12 +41,11 @@ class GameController extends Controller
         ]);
     }
 
-    public function finishGame(Request $request, $game_id)
+public function finishGame(Request $request, $game_id)
     {
         $request->validate([
             'player1_points' => 'required|integer|min:0|max:120'
         ]);
-
 
         return DB::transaction(function () use ($request, $game_id) {
             $game = Game::findOrFail($game_id);
@@ -56,6 +56,13 @@ class GameController extends Controller
 
             $match = GameMatch::lockForUpdate()->findOrFail($game->match_id);
 
+            // --- 1. CAPTURAR OS RECORDES GLOBAIS ATUAIS (ANTES DE ATUALIZAR) ---
+            $maxWins      = $this->getCurrentMaxWins();
+            $maxCoins     = $this->getCurrentMaxCoins();
+            $maxCapotes   = $this->getCurrentMaxCapotes();
+            $maxBandeiras = $this->getCurrentMaxBandeiras();
+
+            // Lógica de pontos
             $p1Points = (int) $request->player1_points;
             $p2Points = 120 - $p1Points;
 
@@ -68,40 +75,28 @@ class GameController extends Controller
 
             if ($p1Points > $p2Points) {
                 $game->winner_user_id = $game->player1_user_id;
-                $game->loser_user_id = null; // Bot perdeu
             } elseif ($p2Points > $p1Points) {
-                $game->winner_user_id = null; // Bot ganhou
                 $game->loser_user_id = $game->player1_user_id;
             } else {
-                // Empate (60-60)
-                $game->winner_user_id = null;
-                $game->loser_user_id = null;
                 $game->is_draw = 1;
             }
-
             $game->save();
 
-            if ($p1Points == 120) {
-                $match->player1_marks += 4;
-            } elseif ($p1Points > 90) {
-                $match->player1_marks += 2;
-            } elseif ($p1Points > 60) {
-                $match->player1_marks += 1;
-            } elseif ($p1Points == 60) {
-                // Empate - Ninguém ganha marcas
-            } elseif ($p1Points >= 30) {
-                $match->player2_marks += 1;
-            } elseif ($p1Points > 0) {
-                $match->player2_marks += 2;
-            } else {
-                $match->player2_marks += 4;
-            }
+            // Atualizar Marcas
+            if ($p1Points == 120) { $match->player1_marks += 4; }
+            elseif ($p1Points > 90) { $match->player1_marks += 2; }
+            elseif ($p1Points > 60) { $match->player1_marks += 1; }
+            elseif ($p1Points >= 30) { $match->player2_marks += 1; }
+            elseif ($p1Points > 0) { $match->player2_marks += 2; }
+            else { $match->player2_marks += 4; }
 
-            //Verificar se a partida terminou
+            // Buscar todos os jogos terminados desta partida
             $games = Game::where('match_id', $match->id)->where('status', 'Ended')->get();
             $coinsEarned = 0;
 
+            // Verificar se a PARTIDA (Match) terminou (4 marcas ou mais)
             if ($match->player1_marks >= 4 || $match->player2_marks >= 4) {
+
                 $match->status = 'Ended';
                 $match->ended_at = now();
                 $match->total_time = $games->sum('total_time');
@@ -110,27 +105,28 @@ class GameController extends Controller
 
                 $match->save();
 
-                //calcular coins ganhas -> vitoria = 5 coins; por cada capote acresce 3 coins; se for bandeira ganha 20 coins
+                // Se o jogador ganhou a partida
                 if($match->player1_marks >= 4){
-                    //Ganhou o jogador
                     $match->winner_user_id = $match->player1_user_id;
                     $match->loser_user_id = null;
 
+                    // Calcular moedas
                     $coinsEarned = 5;
-                    foreach($games as $game){
-                        if($game->player1_points == 120){
-                            $coinsEarned = 20;
-                            break;
+                    foreach($games as $g){
+                        if($g->player1_points == 120) {
+                            $coinsEarned += 20;
                         }
-
-                        if($game->player1_points > 90 && $game->player1_points < 120){
+                        elseif($g->player1_points > 90 && $g->player1_points < 120) {
                             $coinsEarned += 3;
                         }
                     }
 
+                    // Atualizar User
                     $user = User::find($match->player1_user_id);
                     $user->coins_balance += $coinsEarned;
                     $user->save();
+
+                    // Criar Transação
                     CoinTransaction::create([
                         'transaction_datetime' => now(),
                         'match_id' => $match->id,
@@ -138,26 +134,54 @@ class GameController extends Controller
                         'coin_transaction_type_id' => 6,
                         'coins' => $coinsEarned,
                     ]);
-                }else{
-                    //Perdeu o jogador
+
+                    // --- 2. VERIFICAR NOTIFICAÇÕES (RECORDES) ---
+
+                    // A. Most Matches Won
+                    $myTotalWins = GameMatch::where('status', 'Ended')->where('winner_user_id', $user->id)->count();
+                    if ($myTotalWins > $maxWins) {
+                        $this->notifyAllUsers('LEADERBOARD', 'New Wins Leader!', "Player {$user->nickname} is now the champion with {$myTotalWins} wins!");
+                    }
+
+                    // B. Most Coins Earned (Total acumulado type=6)
+                    $myTotalCoins = CoinTransaction::where('user_id', $user->id)->where('coin_transaction_type_id', 6)->sum('coins');
+                    if ($myTotalCoins > $maxCoins) {
+                        $this->notifyAllUsers('LEADERBOARD', 'New Tycoon!', "Player {$user->nickname} earned a record breaking {$myTotalCoins} coins!");
+                    }
+
+                    // C. Most Capotes
+                    $myTotalCapotes = Game::where('status', 'Ended')->where('player1_user_id', $user->id)->whereBetween('player1_points', [91, 119])->count();
+                    if ($myTotalCapotes > $maxCapotes) {
+                        $this->notifyAllUsers('LEADERBOARD', 'Capote Master!', "Player {$user->nickname} is the new Capote master with {$myTotalCapotes} capotes!");
+                    }
+
+                    // D. Most Bandeiras
+                    $myTotalBandeiras = Game::where('status', 'Ended')->where('player1_user_id', $user->id)->where('player1_points', 120)->count();
+                    if ($myTotalBandeiras > $maxBandeiras) {
+                        $this->notifyAllUsers('LEADERBOARD', 'Bandeira Legend!', "Player {$user->nickname} has the most Bandeiras: {$myTotalBandeiras}!");
+                    }
+
+                } else {
+                    // Jogador perdeu
                     $match->winner_user_id = null;
                     $match->loser_user_id = $match->player1_user_id;
                 }
 
                 $match->save();
 
+                // RESPOSTA COMPLETA (MATCH ENDED)
                 return response()->json([
                     'status' => 201,
                     'message' => 'Jogo e partida finalizados com sucesso',
                     'match' => $match,
                     'games' => $games,
-                    'coinsEarned' => $coinsEarned?$coinsEarned:0
+                    'coinsEarned' => $coinsEarned ? $coinsEarned : 0
                 ]);
             }
 
-
             $match->save();
 
+            // RESPOSTA COMPLETA (GAME ENDED, MATCH CONTINUES)
             return response()->json([
                 'status' => 200,
                 'message' => 'Jogo finalizado com sucesso',
@@ -175,5 +199,54 @@ class GameController extends Controller
             'status' => 200,
             'data' => $matches
         ]);
+    }
+
+    // --- MÉTODOS AUXILIARES PARA CALCULAR TOTAIS GLOBAIS ---
+
+    private function getCurrentMaxWins() {
+        return GameMatch::where('status', 'Ended')
+            ->whereNotNull('winner_user_id')
+            ->selectRaw('count(*) as total')
+            ->groupBy('winner_user_id')
+            ->orderByDesc('total')
+            ->value('total') ?? 0;
+    }
+
+    private function getCurrentMaxCoins() {
+        return CoinTransaction::where('coin_transaction_type_id', 6)
+            ->selectRaw('sum(coins) as total')
+            ->groupBy('user_id')
+            ->orderByDesc('total')
+            ->value('total') ?? 0;
+    }
+
+    private function getCurrentMaxCapotes() {
+        return Game::where('status', 'Ended')
+            ->whereBetween('player1_points', [91, 119])
+            ->selectRaw('count(*) as total')
+            ->groupBy('player1_user_id')
+            ->orderByDesc('total')
+            ->value('total') ?? 0;
+    }
+
+    private function getCurrentMaxBandeiras() {
+        return Game::where('status', 'Ended')
+            ->where('player1_points', 120)
+            ->selectRaw('count(*) as total')
+            ->groupBy('player1_user_id')
+            ->orderByDesc('total')
+            ->value('total') ?? 0;
+    }
+
+    private function notifyAllUsers($type, $title, $message) {
+        $users = User::all();
+        foreach ($users as $u) {
+            Notification::create([
+                'user_id' => $u->id,
+                'type' => $type,
+                'title' => $title,
+                'message' => $message
+            ]);
+        }
     }
 }

@@ -39,7 +39,7 @@
               class="w-full"
             />
           </div>
-          
+
           <p v-if="errorMessage" class="text-red-600 text-sm text-center">
             {{ errorMessage }}
           </p>
@@ -97,7 +97,7 @@ const handleLogin = async () => {
     errorMessage.value = "Por favor, preencha o email e a password."
     return
   }
-  
+
   try {
     // 2. Tentar fazer o pedido ao backend
     const response = await axios.post('/api/login', {
@@ -108,14 +108,14 @@ const handleLogin = async () => {
     // O backend aceitou o login e enviou um token
     const token = response.data.token;
 
-    // 4. Chamar a store 
+    // 4. Chamar a store
    userStore.login(response.data.token, response.data.user)
 
     // Definir o deck atual do utilizador
     const myDeck = response.data.user.current_deck || 'default';
     localStorage.setItem('userDeck', myDeck);
-   
-    
+
+
     // 5. Redirecionar para a página principal
     router.push('/home');
 
