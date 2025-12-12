@@ -54,9 +54,9 @@ const setFilter = (type) => {
 // --- PACOTES DE MOEDAS ---
 const coinPackages = [
     { coins: 10, price: 1, label: 'Starter Pack', icon: '💰' },
-    { coins: 50, price: 4.50, label: 'Gamer Pack', icon: '💎' },
-    { coins: 100, price: 9, label: 'Pro Pack', icon: '👑' },
-    { coins: 500, price: 40, label: 'Whale Pack', icon: '🚀' }
+    { coins: 45, price: 4.50, label: 'Gamer Pack', icon: '💎' },
+    { coins: 90, price: 9, label: 'Pro Pack', icon: '👑' },
+    { coins: 400, price: 40, label: 'Whale Pack', icon: '🚀' }
 ]
 
 // --- HELPER: Descrições e Ícones ---
