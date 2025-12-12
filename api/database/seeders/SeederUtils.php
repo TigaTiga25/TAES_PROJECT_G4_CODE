@@ -100,9 +100,14 @@ trait SeederUtils
     public function cleanStorageFolder($folder, $public = true)
     {
         $storagePath = $public ? storage_path("app/public/$folder") : storage_path("app/private/$folder");
+
+        // 1. Tenta apagar a pasta antiga
         if (File::exists($storagePath)) {
+            // No Windows, às vezes isto não apaga logo a pasta, só o conteúdo
             File::deleteDirectory($storagePath);
         }
+
+        // 2. Garante que as pastas "pai" existem (mantém a tua lógica)
         if (!File::exists(storage_path("app"))) {
             File::makeDirectory(storage_path("app"));
         }
@@ -115,7 +120,14 @@ trait SeederUtils
                 File::makeDirectory(storage_path("app/private"));
             }
         }
-        File::makeDirectory($storagePath);
+
+        // 3. --- A CORREÇÃO CRÍTICA ESTÁ AQUI ---
+        // Verifica se a pasta já existe antes de tentar criar.
+        // Se o 'deleteDirectory' falhou em remover a pasta (mas limpou o conteúdo),
+        // ou se o Windows foi lento, isto impede o erro "mkdir(): File exists".
+        if (!File::exists($storagePath)) {
+            File::makeDirectory($storagePath);
+        }
     }
 
 

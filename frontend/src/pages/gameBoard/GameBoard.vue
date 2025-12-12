@@ -26,7 +26,7 @@
           <p class="text-lg text-black-600">Number of games: {{ matchTotalGames }}</p>
           <p class="text-lg text-black-600">Coins earned: {{ coinsEarned }}</p>
         </div>
-        
+
         <div v-if="isMatchOver" class="w-full max-w-3xl mt-6 text-left">
           <ul class="space-y-4">
             <li
@@ -127,7 +127,7 @@
 import { computed, ref } from 'vue'
 import BotHand from './BotHand.vue'
 import PlayerHand from './PlayerHand.vue'
-import Card from './Card.vue'
+import Card from './PlayingCard.vue'
 import generateDeck from '@/lib/generateDeck.js'
 import { toast } from 'vue-sonner'
 import { useRouter } from 'vue-router'
@@ -322,7 +322,7 @@ function sortPlayerHand() {
 }
 
 function startGame() {
-  
+
   const newDeck = fullDeck;
   const shuffled = newDeck.sort(() => Math.random() - 0.5)
 
@@ -353,7 +353,7 @@ function startGame() {
     botCards.value = [botCard];
     deck.value = [];
 
-    iniciateTrick.value = "p"; 
+    iniciateTrick.value = "p";
   }
 
   playedCards.value = { player: null, bot: null }
@@ -581,7 +581,7 @@ async function testBandeira() {
         trickByTrick: ["Test scenario: Bandeira achieved by player"]
       })
 
-          
+
       isGameOver.value = true;
       isMatchOver.value = true;
       popupTitle.value = 'MATCH OVER'
@@ -591,7 +591,7 @@ async function testBandeira() {
       matchTotalGames.value = response.data.games.length;
       matchGames.value = response.data.games;
       coinsEarned.value = response.data.coinsEarned;
-          
+
 
     } catch (error) {
       console.error('Erro ao finalizar jogo:', error)

@@ -10,7 +10,7 @@
 </template>
 
 <script setup>
-import Card from './Card.vue'
+import Card from './PlayingCard.vue'
 
 defineProps({
   cards: {

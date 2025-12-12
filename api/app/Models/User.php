@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+
+use App\Models\CoinPurchase;
+use App\Models\CoinTransaction;
 use App\Models\Notification;
 
 class User extends Authenticatable implements MustVerifyEmail
@@ -37,7 +40,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'unlocked_avatars' => 'array', //Transforma o JSON da DB em Array automaticamente
+            'unlocked_avatars' => 'array',
             'unlocked_decks' => 'array',
         ];
     }
@@ -48,13 +51,19 @@ class User extends Authenticatable implements MustVerifyEmail
     |--------------------------------------------------------------------------
     */
 
-    public function transactions()
-    {
-        return $this->hasMany(\App\Models\Transaction::class);
-    }
 
     public function notifications()
     {
         return $this->hasMany(Notification::class);
+    }
+
+    public function transactions()
+    {
+        return $this->hasMany(CoinTransaction::class)->orderBy('transaction_datetime', 'desc');
+    }
+
+    public function purchases()
+    {
+        return $this->hasMany(CoinPurchase::class)->orderBy('purchase_datetime', 'desc');
     }
 }
