@@ -25,7 +25,7 @@ export const userStore = reactive({
   // === LOGIN CONVIDADO ==============================================
   loginAsGuest() {
     this.token = null;
-    this.user = { name: "Convidado" };
+    this.user = { name: "Guest" };
     this.isLoggedIn = false;
     this.isAnonymous = true;
 
