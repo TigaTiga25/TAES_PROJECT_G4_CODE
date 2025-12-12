@@ -56,7 +56,6 @@ import { ref, onMounted } from 'vue'
 const api = ref({})
 
 onMounted(async () => {
-  // Ensure this URL matches your Laravel route configuration
   const response = await fetch('http://localhost:8000/api/metadata', {
     method: 'GET',
     headers: {
