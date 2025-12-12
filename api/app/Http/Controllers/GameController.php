@@ -114,7 +114,7 @@ public function finishGame(Request $request, $game_id)
                     $coinsEarned = 5;
                     foreach($games as $g){
                         if($g->player1_points == 120) {
-                            $coinsEarned += 20;
+                            $coinsEarned = 20;
                         }
                         elseif($g->player1_points > 90 && $g->player1_points < 120) {
                             $coinsEarned += 3;
