@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, onMounted } from "vue"
-import { useRoute } from 'vue-router' // <--- 1. IMPORT ADDED
+import { useRoute } from 'vue-router'
 import { userStore } from '@/stores/userStore.js'
 import axios from 'axios'
 
@@ -9,20 +9,21 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
 // --- SETUP ---
-const route = useRoute() // <--- 2. INITIALIZE ROUTE
-const API_URL = 'http://localhost:8000/api'
+const route = useRoute()
 
 // --- STATE ---
-const activeTab = ref('wardrobe') // Default
-const currentCategory = ref('avatars') // Default
+const activeTab = ref('wardrobe')
+const currentCategory = ref('avatars')
 const isProcessing = ref(false)
 const feedbackMessage = ref('')
 
 // ==========================================
-// AVATARS LOGIC
+// AVATARS DATA
 // ==========================================
 const DEFAULT_AVATARS = ['Felix', 'Aneka', 'Zack', 'Midnight', 'Bear'];
+// Estado local para "Preview" antes de gravar
 const currentAvatarSeed = ref(userStore.user?.custom_avatar_seed || 'default')
+// A "Mochila" vem da store
 const myWardrobe = ref(userStore.user?.unlocked_avatars || [...DEFAULT_AVATARS])
 
 const shopAvatars = ref([
@@ -36,7 +37,7 @@ const shopAvatars = ref([
 ])
 
 // ==========================================
-// DECKS LOGIC
+// DECKS DATA
 // ==========================================
 const currentDeckFolder = ref(userStore.user?.current_deck || 'default')
 const myDecks = ref(userStore.user?.unlocked_decks || ['default'])
@@ -54,22 +55,28 @@ const shopDecks = ref([
     { name: 'Modern', folder: 'modern', price: 10000 },
 ])
 
-// --- WATCHER: Sync User Data ---
+// --- WATCHER: Manter sincronizado com a Store ---
+// Se comprares algo na store, estas listas atualizam-se sozinhas aqui
 watch(() => userStore.user, (newUser) => {
     if (newUser) {
-        // Sync Avatars
+        // 1. Sincronizar Avatares
         myWardrobe.value = (newUser.unlocked_avatars && newUser.unlocked_avatars.length > 0)
             ? newUser.unlocked_avatars
             : [...DEFAULT_AVATARS];
-        currentAvatarSeed.value = newUser.custom_avatar_seed || 'default'
 
-        // Sync Decks
+        // Só atualiza o seed se o user ainda não tiver mexido (para não estragar o preview)
+        if (!currentAvatarSeed.value || currentAvatarSeed.value === 'default') {
+             currentAvatarSeed.value = newUser.custom_avatar_seed || 'default'
+        }
+
+        // 2. Sincronizar Baralhos
         myDecks.value = (newUser.unlocked_decks && newUser.unlocked_decks.length > 0)
             ? newUser.unlocked_decks
             : ['default'];
-        currentDeckFolder.value = newUser.current_deck || 'default'
 
-        localStorage.setItem('userDeck', currentDeckFolder.value)
+        if (!currentDeckFolder.value || currentDeckFolder.value === 'default') {
+            currentDeckFolder.value = newUser.current_deck || 'default'
+        }
     }
 }, { deep: true, immediate: true })
 
@@ -95,40 +102,35 @@ function selectItem(item) {
 async function saveSelection() {
     if (!userStore.user?.id) return
 
+    isProcessing.value = true
     try {
-        let payload = {}
-        let endpoint = ''
-
         if (currentCategory.value === 'avatars') {
-            endpoint = `/users/${userStore.user.id}`
-            payload = {
-                custom_avatar_seed: currentAvatarSeed.value,
-                unlocked_avatars: myWardrobe.value
-            }
+            // AVATAR: Usa a rota de Update Profile (/users/me)
+            // O await garante que esperamos o servidor responder antes de continuar
+            await axios.patch('/api/users/me', {
+                custom_avatar_seed: currentAvatarSeed.value
+            })
 
-            const response = await axios.put(`${API_URL}${endpoint}`, payload)
-            if (userStore.login) userStore.login(userStore.token, response.data.data)
+            // Atualiza a store localmente para refletir a mudança
+            userStore.updateUser({ custom_avatar_seed: currentAvatarSeed.value })
             showFeedback("Avatar equipped! 😎")
 
         } else {
-            endpoint = '/users/update-deck'
-            payload = { deck: currentDeckFolder.value }
-
-            const response = await axios.patch(`${API_URL}${endpoint}`, payload)
-
-            if(userStore.user) userStore.user.current_deck = currentDeckFolder.value
-            localStorage.setItem('userDeck', currentDeckFolder.value)
-
+            // DECK: Usa a ação da Store que criámos
+            await userStore.equipDeck(currentDeckFolder.value)
             showFeedback("Deck equipped! 🃏")
         }
 
     } catch (error) {
         console.error(error)
         showFeedback("Error saving changes. ❌")
+    } finally {
+        isProcessing.value = false
     }
 }
 
 const buyItem = async (item) => {
+    // Validação de Saldo Local (UX rápida)
     if (userStore.user?.coins_balance < item.price) {
         showFeedback(`Need ${item.price - userStore.user.coins_balance} more coins 💰`)
         return;
@@ -140,24 +142,16 @@ const buyItem = async (item) => {
     isProcessing.value = true;
 
     try {
-        let endpoint = ''
-        let payload = {}
-
         if (currentCategory.value === 'avatars') {
-            endpoint = '/avatars/buy'
-            payload = { seed: item.seed, price: item.price }
+            // Chama a Store (buyAvatar)
+            await userStore.buyAvatar(item.seed, item.price)
         } else {
-            endpoint = '/users/buy-deck'
-            payload = { deck: item.folder, price: item.price }
+            // Chama a Store (buyDeck)
+            await userStore.buyDeck(item.folder, item.price)
         }
 
-        const response = await axios.post(`${API_URL}${endpoint}`, payload);
-        const updatedUser = response.data.user || response.data.data;
-
-        if (userStore.login) userStore.login(userStore.token, updatedUser);
-
-        activeTab.value = 'wardrobe';
-
+        // UX: Muda para a aba de guarda-roupa e seleciona o item novo
+        activeTab.value = 'wardrobe'
         if (currentCategory.value === 'avatars') selectItem(item.seed)
         else selectItem(item.folder)
 
@@ -172,49 +166,45 @@ const buyItem = async (item) => {
     }
 }
 
-// --- 3. LIFECYCLE HOOK: HANDLE NOTIFICATION REDIRECTS ---
+// --- LIFECYCLE: HANDLE NOTIFICATION REDIRECTS ---
 onMounted(() => {
-    // Check URL parameters coming from Notification Click
-
-    // Switch to Shop Tab?
-    if (route.query.tab === 'shop') {
-        activeTab.value = 'shop'
-    }
-
-    // Switch Category?
-    if (route.query.category === 'decks') {
-        currentCategory.value = 'decks'
-    } else if (route.query.category === 'avatars') {
-        currentCategory.value = 'avatars'
-    }
+    if (route.query.tab === 'shop') activeTab.value = 'shop'
+    if (route.query.category) currentCategory.value = route.query.category
 })
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto p-6 space-y-8">
+  <div class="max-w-5xl mx-auto p-6 space-y-8 min-h-screen bg-slate-50/50">
 
-    <div class="flex justify-between items-end">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-            <h1 class="text-3xl font-bold">Customizations</h1>
+            <h1 class="text-3xl font-bold text-slate-900">Customizations</h1>
             <p class="text-slate-500">Spend your coins to look unique.</p>
         </div>
-        <div v-if="feedbackMessage" class="bg-slate-800 text-white px-4 py-2 rounded-lg animate-pulse shadow-lg">
-            {{ feedbackMessage }}
+
+        <div class="flex items-center gap-4">
+             <div class="bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm font-bold text-slate-700">
+                {{ userStore.user?.coins_balance ?? 0 }} 🪙
+            </div>
+
+            <div v-if="feedbackMessage" class="bg-slate-800 text-white px-4 py-2 rounded-lg animate-pulse shadow-lg text-sm font-medium">
+                {{ feedbackMessage }}
+            </div>
         </div>
     </div>
 
-    <div class="flex gap-4 justify-center bg-slate-100 p-2 rounded-xl w-fit mx-auto">
+    <div class="flex gap-2 justify-center bg-white p-1.5 rounded-xl w-fit mx-auto shadow-sm border border-slate-200">
         <button
             @click="currentCategory = 'avatars'"
-            class="px-6 py-2 rounded-lg font-bold transition-all"
-            :class="currentCategory === 'avatars' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'"
+            class="px-6 py-2 rounded-lg font-bold transition-all text-sm"
+            :class="currentCategory === 'avatars' ? 'bg-indigo-50 text-indigo-600 shadow-sm ring-1 ring-indigo-200' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
         >
             👤 Avatars
         </button>
         <button
             @click="currentCategory = 'decks'"
-            class="px-6 py-2 rounded-lg font-bold transition-all"
-            :class="currentCategory === 'decks' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:text-slate-700'"
+            class="px-6 py-2 rounded-lg font-bold transition-all text-sm"
+            :class="currentCategory === 'decks' ? 'bg-indigo-50 text-indigo-600 shadow-sm ring-1 ring-indigo-200' : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'"
         >
             🃏 Decks
         </button>
@@ -222,20 +212,20 @@ onMounted(() => {
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        <Card class="md:col-span-1 border-indigo-100 shadow-md h-fit sticky top-6">
+        <Card class="md:col-span-1 border-slate-200 shadow-sm h-fit sticky top-6 bg-white">
             <CardHeader class="text-center pb-2">
-                <CardTitle>Preview</CardTitle>
+                <CardTitle class="text-lg text-slate-700">Preview</CardTitle>
             </CardHeader>
-            <CardContent class="flex flex-col items-center gap-4">
+            <CardContent class="flex flex-col items-center gap-6 py-6">
 
-                <div v-if="currentCategory === 'avatars'" class="w-48 h-48 rounded-full overflow-hidden border-4 border-indigo-500 bg-indigo-50 shadow-inner">
+                <div v-if="currentCategory === 'avatars'" class="w-48 h-48 rounded-full overflow-hidden border-4 border-indigo-100 bg-indigo-50 shadow-inner relative">
                     <img
                         :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${currentAvatarSeed}`"
                         class="w-full h-full object-cover"
                     >
                 </div>
 
-                <div v-if="currentCategory === 'decks'" class="w-32 h-48 rounded-lg overflow-hidden border-4 border-indigo-500 bg-white shadow-lg flex items-center justify-center">
+                <div v-if="currentCategory === 'decks'" class="w-32 h-48 rounded-lg overflow-hidden border-4 border-slate-100 bg-slate-50 shadow-md flex items-center justify-center relative">
                     <img
                         :src="`/decks/${currentDeckFolder}/c1.png`"
                         class="w-full h-full object-contain"
@@ -245,34 +235,40 @@ onMounted(() => {
                 </div>
 
                 <div class="text-center">
-                    <Badge variant="secondary" class="mt-2 text-lg px-3 py-1 capitalize">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-bold mb-1">Selected</p>
+                    <Badge variant="secondary" class="text-lg px-4 py-1.5 capitalize bg-slate-100 text-slate-800 hover:bg-slate-200">
                         {{ currentCategory === 'avatars' ? currentAvatarSeed : currentDeckFolder }}
                     </Badge>
                 </div>
             </CardContent>
             <CardFooter>
-                <Button class="w-full bg-indigo-600 hover:bg-indigo-700" @click="saveSelection">
-                    Equip {{ currentCategory === 'avatars' ? 'Avatar' : 'Deck' }}
+                <Button
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 font-semibold shadow-md shadow-indigo-200 transition-all active:scale-95"
+                    @click="saveSelection"
+                    :disabled="isProcessing"
+                >
+                    <span v-if="isProcessing">Saving...</span>
+                    <span v-else>Equip {{ currentCategory === 'avatars' ? 'Avatar' : 'Deck' }}</span>
                 </Button>
             </CardFooter>
         </Card>
 
-        <Card class="md:col-span-2 min-h-[500px] flex flex-col">
+        <Card class="md:col-span-2 min-h-[500px] flex flex-col border-slate-200 shadow-sm bg-white">
 
             <div class="flex border-b border-slate-100">
                 <button
                     @click="activeTab = 'wardrobe'"
                     class="flex-1 py-4 text-sm font-semibold transition-colors border-b-2"
-                    :class="activeTab === 'wardrobe' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-slate-500 hover:bg-slate-50'"
+                    :class="activeTab === 'wardrobe' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30' : 'border-transparent text-slate-500 hover:bg-slate-50'"
                 >
-                    My Collection ({{ currentCategory === 'avatars' ? myWardrobe.length : myDecks.length }})
+                    My Collection <span class="ml-1 bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">{{ currentCategory === 'avatars' ? myWardrobe.length : myDecks.length }}</span>
                 </button>
                 <button
                     @click="activeTab = 'shop'"
                     class="flex-1 py-4 text-sm font-semibold transition-colors border-b-2"
-                    :class="activeTab === 'shop' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50' : 'border-transparent text-slate-500 hover:bg-slate-50'"
+                    :class="activeTab === 'shop' ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30' : 'border-transparent text-slate-500 hover:bg-slate-50'"
                 >
-                    Shop ({{ currentCategory === 'avatars' ? shopAvatars.length : shopDecks.length }})
+                    Shop <span class="ml-1 bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full text-xs">{{ currentCategory === 'avatars' ? shopAvatars.length : shopDecks.length }}</span>
                 </button>
             </div>
 
@@ -284,12 +280,12 @@ onMounted(() => {
                             v-for="seed in myWardrobe"
                             :key="seed"
                             @click="selectItem(seed)"
-                            class="cursor-pointer relative rounded-xl p-1 border-2 transition-all hover:bg-slate-50"
+                            class="cursor-pointer relative rounded-xl p-1 border-2 transition-all hover:bg-slate-50 hover:-translate-y-1"
                             :class="currentAvatarSeed === seed ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-100'"
                         >
                             <img :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`" class="w-full aspect-square rounded-full bg-white shadow-sm">
-                            <div v-if="currentAvatarSeed === seed" class="absolute top-0 right-0 bg-indigo-600 text-white rounded-full p-1">
-                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                            <div v-if="currentAvatarSeed === seed" class="absolute top-0 right-0 bg-indigo-600 text-white rounded-full p-1 shadow-md transform translate-x-1/4 -translate-y-1/4">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                             </div>
                         </div>
                     </template>
@@ -299,7 +295,7 @@ onMounted(() => {
                             v-for="deckFolder in myDecks"
                             :key="deckFolder"
                             @click="selectItem(deckFolder)"
-                            class="cursor-pointer relative rounded-xl p-2 border-2 transition-all hover:bg-slate-50 flex flex-col items-center"
+                            class="cursor-pointer relative rounded-xl p-3 border-2 transition-all hover:bg-slate-50 flex flex-col items-center hover:-translate-y-1"
                             :class="currentDeckFolder === deckFolder ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'border-slate-100'"
                         >
                             <img
@@ -308,27 +304,24 @@ onMounted(() => {
                                 @error="$event.target.src = `/decks/${deckFolder}/semFace.png`"
                             >
                             <span class="text-xs font-bold text-slate-700 capitalize">{{ deckFolder }}</span>
-
-                            <div v-if="currentDeckFolder === deckFolder" class="absolute top-0 right-0 bg-indigo-600 text-white rounded-full p-1">
-                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                            <div v-if="currentDeckFolder === deckFolder" class="absolute top-0 right-0 bg-indigo-600 text-white rounded-full p-1 shadow-md transform translate-x-1/4 -translate-y-1/4">
+                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
                             </div>
                         </div>
                     </template>
-
                 </div>
             </div>
 
             <div v-if="activeTab === 'shop'" class="p-6">
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" :class="{'opacity-50 pointer-events-none': isProcessing}">
-
                     <div
                         v-for="item in (currentCategory === 'avatars' ? shopAvatars : shopDecks)"
                         :key="item.seed || item.folder"
                         class="border border-slate-200 rounded-xl overflow-hidden hover:shadow-lg transition-all group bg-white flex flex-col"
                     >
-                        <div class="bg-slate-50 p-4 flex justify-center items-center flex-1">
-                            <img v-if="currentCategory === 'avatars'" :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seed}`" class="w-20 h-20 transition-transform group-hover:scale-110">
-                            <img v-else :src="`/decks/${item.folder}/c1.png`" class="w-16 h-24 object-contain transition-transform group-hover:scale-110 shadow-md">
+                        <div class="bg-slate-50 p-4 flex justify-center items-center flex-1 relative overflow-hidden">
+                            <img v-if="currentCategory === 'avatars'" :src="`https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seed}`" class="w-20 h-20 transition-transform group-hover:scale-110 group-hover:rotate-3">
+                            <img v-else :src="`/decks/${item.folder}/c1.png`" class="w-16 h-24 object-contain transition-transform group-hover:scale-110 shadow-md group-hover:-rotate-3">
                         </div>
 
                         <div class="p-3 border-t border-slate-100 text-center bg-white space-y-2">
@@ -337,12 +330,12 @@ onMounted(() => {
                             <Button
                                 size="sm"
                                 variant="outline"
-                                class="w-full text-xs font-bold"
+                                class="w-full text-xs font-bold transition-colors"
                                 :class="[
                                     (currentCategory === 'avatars' ? myWardrobe.includes(item.seed) : myDecks.includes(item.folder))
-                                    ? 'bg-slate-100 text-slate-500 cursor-not-allowed' :
+                                    ? 'bg-slate-100 text-slate-400 border-transparent cursor-default' :
                                     userStore.user?.coins_balance >= item.price
-                                    ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
+                                    ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700'
                                     : 'border-slate-200 text-slate-400 cursor-not-allowed'
                                 ]"
                                 :disabled="userStore.user?.coins_balance < item.price || (currentCategory === 'avatars' ? myWardrobe.includes(item.seed) : myDecks.includes(item.folder))"
@@ -354,7 +347,6 @@ onMounted(() => {
                             </Button>
                         </div>
                     </div>
-
                 </div>
             </div>
 

@@ -19,6 +19,11 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+
+            $table->string('custom_avatar_seed')->nullable();
+            $table->text('unlocked_avatars')->nullable();
+            $table->text('unlocked_decks')->nullable();
+            $table->string('current_deck')->default('default');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

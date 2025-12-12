@@ -57,6 +57,14 @@ class InitialTransactionsSeeder extends Seeder
     private function updateAllPlayerBalances(): void
     {
         DB::table('users')->where('type', 'P')->update(['coins_balance' => $this->valueOfInitialBonus]);
-        $this->command->info("Updated all players initial Balance");
+
+        DB::table('users')->update([
+            'custom_avatar_seed' => 'Felix',
+            'unlocked_avatars' => json_encode(['Felix', 'Aneka', 'Zack', 'Midnight', 'Bear']),
+            'current_deck' => 'default',
+            'unlocked_decks' => json_encode(['default']),
+        ]);
+
+        $this->command->info("Updated initial Balance and Inventory for all users");
     }
 }

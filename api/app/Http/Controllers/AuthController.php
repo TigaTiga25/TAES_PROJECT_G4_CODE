@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash; // Importante para encriptar a password
 use Illuminate\Auth\Events\Registered;
 use App\Models\CoinTransaction;
 
@@ -26,24 +25,21 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
-            // CORREÇÃO DE SEGURANÇA: Encriptar a password
-            'password' => Hash::make($validatedData['password']),
-            'coins_balance' => 10, // Começa com 10 moedas
+            'password' => $validatedData['password'],
+            'coins_balance' => 10, // Saldo Inicial
+
+            'custom_avatar_seed' => 'Felix',
+            'unlocked_avatars' => ['Felix', 'Aneka', 'Zack', 'Midnight', 'Bear'],
+            'current_deck' => 'default',
+            'unlocked_decks' => ['default'],
         ]);
 
         // 2. REGISTAR A TRANSAÇÃO NO HISTÓRICO
         CoinTransaction::create([
             'user_id' => $user->id,
             'coin_transaction_type_id' => 1, // Tipo 1 = Bónus Inicial
-            
-            // CORREÇÃO: Usar 'coins' (igual ao Model)
-            'coins' => 10, 
-            
-            // CORREÇÃO: Data/Hora atual (obrigatório)
-            'transaction_datetime' => now(),
-
-            // NOTA: Se der erro 500 por causa do match_id, descomenta a linha abaixo:
-            // 'match_id' => null, 
+            'coins' => 10,
+            'transaction_datetime' => now()
         ]);
 
         // 3. Dispara o evento de Registo
